@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>Scans</h1>
+    <p class="lead">
+      View the results of your scans.
+    </p>
+    <p>
+      List of scans with status, start time, end time, and duration. Option to view details of each scan.
+    </p>
+    {{> partials/tables/scans }}
+  </div><!-- end container -->
+  {{> partials/footer}}
+</body>
+</html>

@@ -1,0 +1,18 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="path" data-sortable="true">Path</th>
+        <th data-field="added" data-sortable="true">Added</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#collectionPaths}}
+        <tr>
+            <td><a href="/paths/{{ id }}">{{ root }}</a></td>
+            <td>{{ added }}</td>
+            <td><button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#algorithmsModal" onClick="scanPath({{ id }})">Scan Now</button></td>
+        </tr>
+    {{/collectionPaths}}
+    </tbody>
+</table>

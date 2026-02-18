@@ -1,0 +1,58 @@
+
+server:
+  applicationConnectors:
+    - type: "http"
+      port: 8080
+database:
+  driverClass: "org.h2.Driver"
+  url: "jdbc:h2:~/.openfixity/open-fixity"
+  logValidationErrors: true
+  ignoreExceptionOnPreLoad: true
+  # any properties specific to your JDBC driver:
+  properties:
+    charSet: UTF-8
+    hibernate.dialect: org.hibernate.dialect.H2Dialect
+    hibernate.hbm2ddl.delimiter: ";"
+    hibernate.hbm2ddl.auto: update
+#    jakarta.persistence.schema-generation.database.action: update
+    hibernate.cache.use_second_level_cache: false
+    hibernate.show_sql: true
+    hibernate.format_sql: true
+    hibernate.jpa.compliance: true
+
+
+  # the maximum amount of time to wait on an empty pool before throwing an exception
+  maxWaitForConnection: 1s
+  # the SQL query to run when validating a connection's liveness
+  validationQuery: "/* MyApplication Health Check */ SELECT 1"
+
+  # the minimum number of connections to keep open
+  minSize: 4
+
+  # the maximum number of connections to keep open
+  maxSize: 12
+
+  # whether or not idle connections should be validated
+  checkConnectionWhileIdle: false
+
+logging:
+  level: "INFO"
+  loggers:
+    "org.openpreservation":
+      level: "DEBUG"
+      additive: false
+      appenders:
+        - type: "file"
+          currentLogFilename: "./log/open-fixity.log"
+          threshold: "ALL"
+          queueSize: 512
+          discardingThreshold: 0
+          archive: true
+          archivedLogFilenamePattern: "./log/open-fixity-%d.log"
+          archivedFileCount: 20
+          timeZone: "CET"
+          logFormat: "%-5p [%d{ISO8601,UTC}] %c: %m%n%rEx"
+          bufferSize: "8KiB"
+          immediateFlush: true
+  appenders:
+    - type: "console"

@@ -1,0 +1,20 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="path" data-sortable="true">Path</th>
+        <th data-field="status" data-sortable="true">Status</th>
+        <th data-field="size" data-sortable="true" data-formatter="sizeFormatter">Size</th>
+        <th data-field="digest" data-sortable="true">Digest</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#scan.results}}
+        <tr>
+            <td><i class='bi bi-file-check-fill'></i> {{ relativePath }}</td>
+            <td>{{{ status.symbol }}}</td>
+            <td>{{ length }}</td>
+            <td>{{ digestRecord.shortenedDigest }}</td>
+        </tr>
+    {{/scan.results}}
+    </tbody>
+</table>

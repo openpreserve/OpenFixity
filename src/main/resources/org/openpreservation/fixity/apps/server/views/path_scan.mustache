@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>Scan Id: {{ scan.id }}</h1>
+    <p class="lead">
+      Full results of the scan for path: {{ scan.collectionPath.root }}/
+    </p>
+    <div class="card">
+      <div class="card-header">Scan Summary</div>
+      <div class="card-body">
+        <p class="card-text">Status: {{ scan.status }}</p>
+        <p class="card-text">Duration: {{ scan.duration }}</p>
+        <p class="card-text">Scanned: {{ scan.summary.totalFiles }} Files, {{ scan.summary.formattedTotalBytes }}</p>
+      </div>
+    </div>
+    {{> partials/tables/scan_results}}
+  </div><!-- end container -->
+  {{> partials/footer}}
+</body>
+</html>

@@ -1,0 +1,44 @@
+name: Java CI with Maven
+
+on:
+  push: 
+    branches: main
+  pull_request:
+    branches: [ main, dev ]
+jobs:
+  
+  mac-deploy:
+    
+    runs-on: macos-latest
+
+    name: Mac Deploy
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up OpenJDK 15
+      uses: joschi/setup-jdk@v2
+      with:
+        java-version: '17'
+    - name: Build with Maven
+      run: mvn clean package
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OS: mac
+        
+  
+  windows-deploy:
+    
+    runs-on: windows-latest
+
+    name: Windows Deploy
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up OpenJDK 15
+      uses: joschi/setup-jdk@v2
+      with:
+        java-version: '17'
+    - name: Build with Maven
+      run: mvn clean package
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OS: windows
+    

@@ -1,0 +1,16 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="name" data-sortable="true">Name</th>
+        <th data-field="created" data-sortable="true" data-formatter="dateFormatter">Created</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#collections}}
+        <tr>
+            <td><a href="/collections/{{name}}">{{ name }}</a></td>
+            <td>{{ created }}</td>
+        </tr>
+    {{/collections}}
+    </tbody>
+</table>

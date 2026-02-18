@@ -1,0 +1,16 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="group" data-sortable="true">Group</th>
+        <th data-field="name" data-sortable="true">Name</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#jobKeys}}
+        <tr>
+            <td>{{ group }}</td>
+            <td>{{ name }}</td>
+        </tr>
+    {{/jobKeys}}
+    </tbody>
+</table>

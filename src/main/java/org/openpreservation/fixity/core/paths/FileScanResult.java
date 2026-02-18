@@ -1,0 +1,156 @@
+package org.openpreservation.fixity.core.paths;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
+
+import org.jspecify.annotations.NonNull;
+import org.openpreservation.fixity.core.digests.DigestResult;
+import org.openpreservation.fixity.core.digests.Hasher;
+
+public interface FileScanResult {
+    public static final String UNKNOWN_CONTENT_TYPE = "application/octet-stream";
+    /**
+     * The path that was scanned.
+     * @return
+     */
+    public Path getPath();
+    public long getLength();
+    public LocalDateTime getCreated();
+    public LocalDateTime getModified();
+    public Set<? extends DigestResult> getDigestResults();
+    public FileScanStatus getStatus();
+    public LocalDateTime getScanned();
+
+    static final class FileScanResultImpl implements FileScanResult {
+        private final Path path;
+        private final long length;
+        private final LocalDateTime created;
+        private final LocalDateTime modified;
+        private final Set<@NonNull DigestResult> digestResults;
+        private final LocalDateTime scanned;
+        private final FileScanStatus status;
+
+        private FileScanResultImpl(final Path path,
+                                   final long length,
+                                   final LocalDateTime created,
+                                   final LocalDateTime modified,
+                                   final Set<@NonNull DigestResult> digestResults,
+                                   final LocalDateTime scanned,
+                                   final FileScanStatus status) {
+            this.path = path;
+            this.length = length;
+            this.created = created;
+            this.modified = modified;
+            this.digestResults = Collections.unmodifiableSet(digestResults);
+            this.scanned = scanned;
+            this.status = status;
+        }
+        @Override
+        public Path getPath() {
+            return this.path;
+        }
+        @Override
+        public long getLength() {
+            return this.length;
+        }
+        @Override
+        public LocalDateTime getCreated() {
+            return this.created;
+        }
+        @Override
+        public LocalDateTime getModified() {
+            return this.modified;
+        }
+        @Override
+        public Set<@NonNull ? extends DigestResult> getDigestResults() {
+            return this.digestResults;
+        }
+        @Override
+        public FileScanStatus getStatus() {
+            return this.status;
+        }
+        @Override
+        public LocalDateTime getScanned() {
+            return this.scanned;
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hash(path, length, created, modified, digestResults, scanned, status);
+        }
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (!(obj instanceof FileScanResultImpl))
+                return false;
+            FileScanResultImpl other = (FileScanResultImpl) obj;
+            return Objects.equals(path, other.path) && length == other.length && Objects.equals(created, other.created)
+                    && Objects.equals(modified, other.modified) && Objects.equals(digestResults, other.digestResults)
+                    && Objects.equals(scanned, other.scanned) && status == other.status;
+        }
+
+        static final class Builder {
+            private Path path;
+            private long length = -1L;
+            private LocalDateTime created = null;
+            private LocalDateTime modified = null;
+            private Set<@NonNull DigestResult> digestResults = Collections.emptySet();
+            private LocalDateTime scanned = LocalDateTime.now();
+            private FileScanStatus status = FileScanStatus.IGNORED;
+            static Builder of(final Path path) { return new Builder().withPath(path); } 
+            Builder withPath(final Path path) { this.path = path; return this; }
+            Builder withLength(final long length) { this.length = length; return this; }
+            Builder withCreated(final LocalDateTime created) { this.created = created; return this; }
+            Builder withModified(final LocalDateTime modified) { this.modified = modified; return this; }
+            Builder withDigestResults(final Set<@NonNull DigestResult> digestResults) { this.digestResults = digestResults; return this; }
+            Builder withDigestResult(final @NonNull DigestResult digestResult) { this.digestResults = Collections.singleton(digestResult); return this; }
+            Builder withScanned(final LocalDateTime scanned) { this.scanned = scanned; return this; }
+            Builder withStatus(final FileScanStatus status) { this.status = status; return this; }
+            FileScanResultImpl build() {
+                if (this.path == null) throw new IllegalStateException("Path must be set");
+                if (this.digestResults == null) throw new IllegalStateException("Digest results must not be null");
+                if (this.scanned == null) throw new IllegalStateException("Scanned must be set");
+                if (this.status == null) throw new IllegalStateException("Status must be set");
+                return new FileScanResultImpl(this.path, this.length, this.created, this.modified, this.digestResults, this.scanned, this.status);
+            }
+        }
+
+        static FileScanResult of(final Path toScan, final Hasher hasher) throws FileNotFoundException {
+            if ((toScan == null) || (hasher == null)) throw new NullPointerException("Path and Hasher cannot be null");
+            if (Files.isDirectory(toScan)) throw new IllegalArgumentException("Path to scan cannot be a directory: " + toScan.toString());
+            FileScanResultImpl.Builder builder = FileScanResultImpl.Builder.of(toScan);
+            if (Files.notExists(toScan)) return builder.withStatus(FileScanStatus.NOTFOUND).build();
+            if (!Files.isReadable(toScan)) return builder.withStatus(FileScanStatus.DENIED).build();
+            try {
+                builder.withLength(Files.size(toScan));
+                @SuppressWarnings("null")
+                final BasicFileAttributes attrs = Files.readAttributes(toScan, BasicFileAttributes.class);
+                if (attrs.creationTime() != null) {
+                    builder.withCreated(attrs.creationTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                }
+                if (attrs.lastModifiedTime() != null) {
+                    builder.withModified(attrs.lastModifiedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                }
+                try (final FileInputStream fis = new FileInputStream(toScan.toFile())) {
+                    builder.withDigestResult(hasher.hash(fis));
+                }
+                return builder.withStatus(FileScanStatus.SCANNED).build();
+            } catch (IOException e) {
+                return builder.withStatus(FileScanStatus.DAMAGED).build();
+            }
+        }
+    }
+
+    public static FileScanResult of(final Path toScan, final Hasher hasher) throws FileNotFoundException {
+        return FileScanResultImpl.of(toScan, hasher);
+    }
+}

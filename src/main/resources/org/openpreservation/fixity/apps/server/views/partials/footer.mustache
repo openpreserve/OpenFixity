@@ -1,0 +1,56 @@
+    <script>
+
+    function itemCounter(data) {
+      var field = this.field
+      return data.map(function (row) {
+        return +row[field]
+      }).reduce(function (sum, i) {
+        return sum + i
+      }, 0)
+    }
+
+    function sizeSummer(data) {
+      var field = this.field
+      return sizeFormatter(data.map(function (row) {
+        return +row[field]
+      }).reduce(function (sum, i) {
+        return sum + i
+      }, 0))
+    }
+
+    function dateFormatter(value, row, index) {
+      var date = value.replace('T', ' ');
+      return date.slice(0, 16);
+    }
+
+    function sizeFormatter(bytes, row, index, si=false, dp=2) {
+      const thresh = 1024;
+
+      if (Math.abs(bytes) < thresh) {
+        return bytes + ' B';
+      }
+
+      const units = ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+      let u = -1;
+      const r = 10**dp;
+
+      do {
+        bytes /= thresh;
+        ++u;
+      } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+
+      return bytes.toFixed(dp) + ' ' + units[u];
+    }
+  </script>
+<!-- Load the JavaScript bulk last -->
+  <script src="https://code.jquery.com/jquery-4.0.0.min.js" integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/bootstrap-table@1.26.0/dist/bootstrap-table.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('li.active').removeClass('active');
+      $('a#{{ menuId }}').closest('li').addClass('active'); 
+    });
+  </script>

@@ -1,0 +1,20 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="collection" data-sortable="true">Collection</th>
+        <th data-field="path" data-sortable="true">Path</th>
+        <th data-field="added" data-sortable="true" data-formatter="dateFormatter">Registered</th>
+        <th>Scan</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#registeredPaths}}
+        <tr>
+            <td><a href="/collections/{{ collection.name }}">{{ collection.name }}</a></td>
+            <td><a href="/paths/{{ collectionPath.id }}">{{ collectionPath.root }}</a></td>
+            <td>{{ registeredAt }}</td>
+            <td><a class="btn btn-outline-primary btn-sm" onClick="deregisterPath('{{ collection.name }}', {{ collectionPath.id }})">Deregister</a></td>
+        </tr>
+    {{/registeredPaths}}
+    </tbody>
+</table>

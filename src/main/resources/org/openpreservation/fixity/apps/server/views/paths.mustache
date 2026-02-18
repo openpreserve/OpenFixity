@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>Registered Paths</h1>
+    <p class="lead">
+      See the paths that make up your collections.
+    </p>
+    {{> partials/tables/paths }}
+  </div><!-- end container -->
+  {{> partials/modals/algorithms }}
+  {{> partials/footer}}
+  <script>
+    $(document).ready(function() {
+      $.get("/api/digests/algorithms/", function (algorithms) {
+        var checked = ""
+        const defaultAlgorithm = "{{ defaultAlgorithm }}"
+        for (const algorithm of algorithms) {
+          if (algorithm === defaultAlgorithm) {
+            checked = "checked"
+          }
+          $('#algorithmsRadioGroup').append(
+            `<input type="radio" class="btn-check" name="algorithmsRadio" id="algorithmsRadio${algorithm}" autocomplete="off" value="${algorithm}" ${checked}>` +
+            `<label class="btn btn-outline-primary" for="algorithmsRadio${algorithm}">${algorithm}</label>`
+          );
+          checked = ""
+        }
+      });
+    });
+    function scanPath(pathId) {
+      $('#algorithmsModal .btn-primary').off('click').on('click', function() {
+        const algorithm = $('#algorithmsRadioGroup input[name="algorithmsRadio"]:checked').val();
+        console.log(`Scanning path ${pathId} with algorithm ${algorithm}`);
+        $('#algorithmsModal').modal('hide');
+        $.post(`/api/paths/${pathId}/scan/${algorithm}`, function() {
+          location.reload();
+        });
+      });
+    }
+  </script>
+</body>
+</html>

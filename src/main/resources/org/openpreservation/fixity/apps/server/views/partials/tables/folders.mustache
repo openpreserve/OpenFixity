@@ -1,0 +1,22 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+        <tr>
+            <th data-field="name" data-sortable="true">Name</th>
+            <th data-field="register" data-sortable="false"></th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#folder.hasParent}}    
+        <tr>
+            <td><a href="/folders/{{ folder.parentId }}"><i class="bi bi-folder-fill"></i> ..</a></td>
+            <td></td>
+        </tr>
+    {{/folder.hasParent}}
+    {{#children}}
+        <tr>
+            <td>{{#isReadable}}<a href="/folders/{{ id }}"><i class="bi bi-folder-fill"></i> {{ name }}</a>{{/isReadable}}{{^isReadable}}<span class="text-muted"><i class="bi bi-folder-x"> {{ name }}</i></span>{{/isReadable}}</td>
+            <td><button type="button" class="btn btn-outline-primary btn-sm"{{#isReadable}} data-bs-toggle="modal" data-bs-target="#collectionsModal" onClick="setFolderId({{ id }})">Register{{/isReadable}}{{^isReadable}} disabled>Unreadable</button>{{/isReadable}}</td>
+        </tr>
+    {{/children}}
+    </tbody>
+</table>

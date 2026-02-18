@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>partials/head}}
+</head>
+<body>
+  {{>partials/navbar}}
+  <div class="container">
+    <h1>{{ errorDetails.status }}:{{ errorDetails.title }}</h1>
+    <p class="lead">{{ errorDetails.type }}</p>
+    <h2>{{ errorDetails.detail }}</h2>
+    {{#errorDetails.instance}}<p class="lead">Instance: {{ errorDetails.instance }}</p>{{/errorDetails.instance}}
+    {{#errorDetails.traceid}}<p class="lead">Trace ID: {{ errorDetails.traceid }}</p>{{/errorDetails.traceid}}
+  </div><!-- end container -->
+  {{>partials/footer}}
+  <script src="/js/client-page.js"></script>
+</body>
+</html>

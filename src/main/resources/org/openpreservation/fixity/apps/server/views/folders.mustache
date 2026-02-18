@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>{{#ancestors}}<a href="/folders/{{id}}">{{name}}</a>{{#hasParent}}/{{/hasParent}}{{/ancestors}}{{ folder.name }}</h1>
+    <p class="lead">
+      Register folders with a collection for fixity scanning.
+    </p>
+    {{> partials/tables/folders }}
+  </div><!-- end container -->
+  {{> partials/modals/collections}}
+  {{> partials/footer}}
+  <script>
+    $(document).ready(function() {
+      $.get("/api/collections", function (collections) {
+        var checked = "checked"
+        for (const collection of collections) {
+          $('#collectionsRadioGroup').append(
+            `<input type="radio" class="btn-check" name="collectionRadio" id="collectionRadio${collection.id}" autocomplete="off" value="${collection.name}" ${checked}>` +
+            `<label class="btn btn-outline-primary" for="collectionRadio${collection.id}">${collection.name}</label>`
+          );
+          checked = ""
+        }
+      });
+    });
+    function setFolderId(folderId) {
+      $('#collectionsModal .btn-primary').off('click').on('click', function() {
+        const collectionId = $('#collectionsRadioGroup input[name="collectionRadio"]:checked').val();
+        console.log(`Registering folder ${folderId} to collection ${collectionId}`);
+        $('#collectionsModal').modal('hide');
+        $.post(`/api/collections/${collectionId}/folder/${folderId}`, function() {
+          location.reload();
+        });
+      });
+    }
+  </script>
+</body>
+</html>

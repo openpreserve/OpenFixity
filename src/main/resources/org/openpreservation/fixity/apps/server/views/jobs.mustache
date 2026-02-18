@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>Jobs</h1>
+    <p class="lead">
+      Manage the scheduling of fixity jobs.
+    </p>
+    <p>
+      List of jobs with status, start time, end time, and duration. Option to view details of each job.
+    </p>
+    <p>
+      <button class="btn btn-outline-primary" id="pauseResume"><i class="bi bi-question-circle-fill"></i> Status..</button>
+    </p>
+    {{> partials/tables/jobs }}
+  </div><!-- end container -->
+  {{> partials/footer}}
+  <script>
+    $(document).ready(function() {
+      // Check scheduler status on page load
+      console.log("Checking scheduler status...");
+      fetch("/api/scheduler/isPaused")
+        .then(function(response) {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then(function(data) {
+          var button = document.getElementById("pauseResume");
+          button.innerHTML = data ? "<i class='bi bi-play-btn'></i> Resume Scheduler" : "<i class='bi bi-pause-btn'></i> Pause Scheduler";
+        })
+        .catch(function(error) {
+          console.error("There was a problem with the fetch operation:", error);
+        });
+        $("#pauseResume").click(function() {
+          fetch("/api/scheduler/isPaused")
+            .then(function(response) {
+              if (!response.ok) {
+                alert("Failed to check scheduler status: " + response.statusText);
+                throw new Error("Network response was not ok");
+              }
+              return response.json();
+            })
+            .then(function(isPaused) {
+              var action = isPaused ? "resume" : "pause";
+              fetch("/api/scheduler/" + action, { method: "POST" })
+                .then(function(response) {
+                  if (!response.ok) {
+                    alert("Failed to check scheduler status: " + response.statusText);
+                    throw new Error("Network response was not ok");
+                  }
+                  return response.json();
+                })
+                .then(function(data) {
+                  var button = document.getElementById("pauseResume");
+                  button.innerHTML = data ? "<i class='bi bi-play-btn'></i> Resume Scheduler" : "<i class='bi bi-pause-btn'></i> Pause Scheduler";
+                })
+                .catch(function(error) {
+                  alert("Failed to check scheduler status: " + error.message);
+                  console.error("There was a problem with the fetch operation:", error);
+                });
+            })
+            .catch(function(error) {
+              alert("Failed to check scheduler status: " + error.message);
+              console.error("There was a problem with the fetch operation:", error);
+            });
+        });
+    });
+
+  </script>
+</body>
+</html>

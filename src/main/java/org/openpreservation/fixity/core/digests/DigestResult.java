@@ -1,0 +1,162 @@
+package org.openpreservation.fixity.core.digests;
+
+import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.Objects;
+
+import org.jspecify.annotations.NonNull;
+
+/**
+ * An interface defining the result of a digest calculation.
+ */
+public interface DigestResult extends Serializable {
+    /**
+     * Get the String identifier of the algorithm used to create this digest.
+     * @return a unique String identifier of the algorithm used.
+     */
+    public Algorithms getAlgorithm();
+    /**
+     * Get the hex encoded digest value.
+     * @return a String representation of the hex encoded digest value.
+     */
+    public String toHexString();
+    /**
+     * Get the raw byte array of the digest value.
+     * @return a byte[] containing the raw digest value.
+     */
+    public byte[] getDigestBytes();
+    /**
+     * Get the length of the digest in bytes.
+     * @return the length of the digest in bytes.
+     */
+    public int getDigestLength();
+    /**
+     * Get the length of the message that was digested in bytes.
+     * @return the length of the message that was digested in bytes.
+     */
+    public long getMessageLength();
+
+    final static class DigestResultImpl implements DigestResult {
+        private final Algorithms algorithm;
+        private final byte[] digestBytes;
+        private final long messageLength;
+        static final DigestResultImpl DEFAULT_INSTANCE = new DigestResultImpl();
+
+        private DigestResultImpl() {
+            this.algorithm = Algorithms.DEFAULT;
+            this.digestBytes = this.algorithm.getNullHex().getBytes(StandardCharsets.UTF_8);
+            this.messageLength = "".getBytes(StandardCharsets.UTF_8).length;
+        }
+
+        private DigestResultImpl(
+                final Algorithms algorithm,
+                final byte[] digestBytes,
+                final long messageLength) {
+            this.algorithm = algorithm;
+            this.digestBytes = digestBytes;
+            this.messageLength = messageLength;
+        }
+
+        @Override
+        public Algorithms getAlgorithm() {
+            return this.algorithm;
+        }
+
+        @Override
+        public String toHexString() {
+            return HexFormat.of().formatHex(this.digestBytes);
+        }
+
+        @Override
+        public byte[] getDigestBytes() {
+            return this.digestBytes;
+        }
+
+        @Override
+        public int getDigestLength() {
+            return this.digestBytes.length;
+        }
+
+        @Override
+        public long getMessageLength() {
+            return this.messageLength;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode(digestBytes);
+            result = prime * result + Objects.hash(algorithm, messageLength);
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (!(obj instanceof DigestResultImpl))
+                return false;
+            final DigestResultImpl other = (DigestResultImpl) obj;
+            return Objects.equals(algorithm, other.algorithm) && Arrays.equals(digestBytes, other.digestBytes)
+                    && messageLength == other.messageLength;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder builder = new StringBuilder();
+            builder.append("DigestResultImpl [");
+            if (algorithm != null)
+                builder.append("algorithm=").append(algorithm).append(", ");
+            if (digestBytes != null)
+                builder.append("digestBytes=").append(Arrays.toString(digestBytes)).append(", ");
+            builder.append("messageLength=").append(messageLength).append(", ");
+            if (toHexString() != null)
+                builder.append("digestHex=").append(toHexString()).append(", ");
+            builder.append("digestLength=").append(getDigestLength()).append("]");
+            return builder.toString();
+        }
+    }
+    public static final Map<Algorithms, DigestResult> NULL_DIGESTS = nullDigests();
+    public static final DigestResult DEFAULT_NULL_DIGEST = NULL_DIGESTS.get(Algorithms.DEFAULT);
+
+    private static Map<Algorithms, DigestResult> nullDigests() {
+        final Map<Algorithms, DigestResult> nulls = new HashMap<>();
+        for (Algorithms algorithm : Algorithms.AVAILABLE) {
+            nulls.put(algorithm, new DigestResultImpl(algorithm, algorithm.getNullBytes(), 0L));
+        }
+        return Collections.unmodifiableMap(nulls);
+    }
+
+    /**
+     * Create a DigestResult instance.
+     * @param algorithm the String identifier of the algorithm used.
+     * @param digestBytes the byte array containing the digest value.
+     * @param messageLength the length of the original message.
+     * @return a DigestResult instance.
+     */
+    public static @NonNull DigestResult of(
+            final Algorithms algorithm,
+            final byte[] digestBytes,
+            final long messageLength) {
+        if (algorithm == null || !Algorithms.AVAILABLE.contains(algorithm)) {
+            throw new IllegalArgumentException("algorithm argument is null or not a supported digest algorithm");
+        }
+        if (digestBytes == null) {
+            throw new IllegalArgumentException("digestBytes argument is null or has zero length");
+        } else if (digestBytes.length != NULL_DIGESTS.get(algorithm).getDigestLength()) {
+            throw new IllegalArgumentException(String.format("digestBytes argument length %d does not match expected length %d for algorithm %s",
+                                                             digestBytes.length, NULL_DIGESTS.get(algorithm).getDigestLength(),
+                                                             algorithm));
+        }
+        if (messageLength < 0L) {
+            throw new IllegalArgumentException("messageLength argument is less than zero");
+        }
+        return new DigestResultImpl(algorithm, digestBytes, messageLength);
+    }
+}

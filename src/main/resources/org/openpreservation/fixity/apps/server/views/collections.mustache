@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>Collections</h1>
+    <p class="lead">
+      Create new collections or manage the ones you have.
+    </p>
+    <p>
+      <form id="collform" method="post">
+        <div class="form-group">
+          <label for="collection_name">Collection Name</label>
+          <input type="text" id="collection_name" name="collection_name" class="form-control" value="" placeholder="My new collection name"/>
+          <small id="descHelp" class="form-text text-muted">Please add a name for a collection to be created.</small>
+        </div>
+        <div class="form-group">
+          <input id="create" name="create" type="submit" value="Create Collection" class="btn btn-outline-primary" role="button" aria-pressed="true"></input>
+        </div>
+      </form>
+    </p>
+    {{> partials/tables/collections }}
+  </div><!-- end container -->
+  {{> partials/footer}}
+  <script>
+    document.getElementById('collform').addEventListener('submit', function () {
+      this.action = '/collections/' + encodeURIComponent(document.getElementById('collection_name').value || '');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{>partials/head}}
+</head>
+<body>
+  {{>partials/navbar}}
+  <div class="container-xl">
+    <h1>{{ collection.name }}</h1>
+    <p class="lead">
+      Manage your collection options, schedule and paths.
+    </p>
+    <p><btn class="btn btn-outline-primary btn-sm" onClick="scanCollection('{{ collection.name }}')">Scan Collection</btn></p>
+    <h2>Path Registrations</h2>
+    {{>partials/tables/registrations}}
+  </div><!-- end container -->
+  {{>partials/modals/scan}}
+  {{>partials/footer}}
+  <script src="/js/scan.js"></script>
+  <script>
+    function scanCollection(collectionName) {
+      $.post('/api/collections/' + collectionName + '/scan', function(data) {
+        $('#scanModal .modal-body').html('<p>Scheduled ' + data.length + ' scan jobs.</p>');
+      }).fail(function() {
+        $('#scanModal .modal-body').html('<p class="text-danger">Failed to schedule scans for collection.</p>');
+      });
+    }
+  </script>
+</body>
+</html>

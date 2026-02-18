@@ -1,0 +1,26 @@
+<table class="table table-striped" data-toggle="table">
+    <thead class="thead-dark">
+    <tr>
+        <th data-field="path" data-sortable="true">Path</th>
+        <th data-field="status" data-sortable="true">Status</th>
+        <th data-field="started" data-sortable="true" data-formatter="dateFormatter">Started</th>
+        <th data-field="duration" data-sortable="true">Duration</th>
+        <th data-field="scanned" data-sortable="true">Scanned</th>
+        <th data-field="damage" data-sortable="true">Damaged</th>
+        <th data-field="denied" data-sortable="true">Denied</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#scans}}
+        <tr>
+            <td><a href="/scans/{{ id }}">{{ collectionPath.name }}</a></td>
+            <td>{{ status }}</td>
+            <td>{{ started }}</td>
+            <td>{{ duration }}</td>
+            <td>{{ summary.totalFiles }} Files, {{ summary.formattedTotalBytes }}</td>
+            <td>{{ damagedCount }}</td>
+            <td>{{ deniedCount }}</td>
+        </tr>
+    {{/scans}}
+    </tbody>
+</table>

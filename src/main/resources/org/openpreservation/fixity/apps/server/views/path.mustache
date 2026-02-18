@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+{{> partials/head }}
+</head>
+<body>
+  {{> partials/navbar }}
+  <div class="container-xl">
+    <h1>{{ collectionPath.root }}</h1>
+    <p class="lead">
+      Scan this path and check on collections it's registered to and scheduling.
+    </p>
+    <p>
+      <a href="/collections/{{ collection.id }}/scan" class="btn btn-outline-primary btn-sm">Scan Now</a> Plus hidden and filter options.
+    </p>
+    <p>
+      Schedule:
+    </p>
+    <h2>Path Registrations</h2>
+    {{> partials/tables/registrations }}
+  </div><!-- end container -->
+  {{> partials/modals/scan}}
+  {{> partials/footer}}
+  <script src="/js/scan.js"></script>
+</body>
+</html>

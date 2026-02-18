@@ -1,0 +1,103 @@
+body, .table {
+  color: #0d8663;
+}
+
+h1, h2, h3, h4, h5, h6, a {
+  color: #147da4 !important;
+}
+
+a:hover {
+  color: #c73079 !important;
+}
+
+
+.btn-outline-primary {
+  color: white !important;
+  background-color: #c73079 !important;
+  border-color: #c73079 !important;
+}
+
+.btn-outline-primary:hover, .btn-group-vertical>.btn-check:checked+.btn {
+  color: #c73079 !important;
+  background-color: white !important;
+}
+
+.bi-folder-fill, .bi-folder-x {
+  font-size: 1.4rem !important;
+  margin-right: 0.5em !important;
+}
+
+i.bi-file-earmark-x, i.bi-file-earmark-lock2, i.bi-file-earmark-minus {
+  color: #ddd !important;
+  font-size: 1.4rem !important;
+}
+
+i.bi-file {
+  font-size: 1.4rem !important;
+  color: #ddd !important;
+}
+
+i.bi-file-check {
+  font-size: 1.4rem !important;
+  color: #0d8663 !important;
+}
+
+i.bi-file-plus {
+  font-size: 1.4rem !important;
+  color: orange !important;
+}
+
+i.bi-file-earmark-diff {
+  font-size: 1.4rem !important;
+  color: #c73079 !important;
+}
+
+.navbar {
+ padding: 0.5rem 10% !important;
+ margin-bottom: 1rem !important;
+}
+
+.navbar, .navbar-brand, .nav-link {
+  background-color: #383838 !important;
+  color: white !important;
+}
+
+.nav-item {
+  border-bottom: 1px solid !important;
+  border-color: #383838 !important;
+  margin: 0rem 0.5rem;
+}
+
+.nav-item.active, .nav-item:hover, .nav-item a:hover, a.navbar-brand:hover {
+  color: white !important;
+  border-color: white !important;
+}
+
+#siteSearch {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+#siteSearch .form-control {
+  background-color: #383838 !important;
+  color: white !important;
+  border: 1px solid white !important;
+}
+
+#searchTerm::placeholder {
+  color: #aaa !important;
+}
+
+img.logo {
+  width: 50px;
+  height: auto;
+}
+
+.table .thead-dark th {
+	background-color: #0d8663;
+	color: white;
+}
+  
+.modal {
+  text-align: center !important;
+}
