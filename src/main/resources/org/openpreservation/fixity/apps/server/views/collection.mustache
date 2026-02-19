@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-{{>partials/head}}
+{{> partials/head}}
 </head>
 <body>
-  {{>partials/navbar}}
+  {{> partials/navbar}}
   <div class="container-xl">
     <h1>{{ collection.name }}</h1>
     <p class="lead">
@@ -14,8 +14,9 @@
     <h2>Path Registrations</h2>
     {{>partials/tables/registrations}}
   </div><!-- end container -->
-  {{>partials/modals/scan}}
-  {{>partials/footer}}
+  {{> partials/modals/scan}}
+  {{> partials/modals/registration}}
+  {{> partials/footer}}
   <script src="/js/scan.js"></script>
   <script>
     function scanCollection(collectionName) {

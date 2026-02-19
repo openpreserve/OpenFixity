@@ -29,7 +29,7 @@ import jakarta.persistence.Table;
 
 @Entity()
 @Table()
-public final class FileScanRecord implements org.openpreservation.fixity.core.paths.FileScanResult, Serializable {
+public final class FileScanRecord implements FileScanResult, Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,6 +39,8 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
     private final PathScan execution;
     @Column(nullable = false)
     private final String relativePath;
+    @Column(nullable = false)
+    private PathAuditStatus auditStatus;
     @Column(nullable = true)
     private final Long length;
     @Column(nullable = true)
@@ -57,12 +59,13 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
     private final Set<DigestRecord> digestResults = new LinkedHashSet<>();
     private FileScanRecord() {
         // For JPA
-        this(null, null, null, null, null, null, null, null);
+        this(null, null, null, null, null, null, null, null, null);
     }
 
     private FileScanRecord(final PathScan execution, final FileScanResult result) { 
         this(execution,
              relativizePath(execution.getCollectionPath().getRoot().toString(), result.getPath() ),
+             PathAuditStatus.ADDED,
              result.getLength(),
              result.getCreated(),
              result.getModified(),
@@ -73,6 +76,7 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
 
     private FileScanRecord(final PathScan execution,
                            final String relativePath,
+                           final PathAuditStatus auditStatus,
                            final Long length,
                            final LocalDateTime created,
                            final LocalDateTime modified,
@@ -82,6 +86,7 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
         super();
         this.execution = execution;
         this.relativePath = relativePath;
+        this.auditStatus = auditStatus;
         this.created = created;
         this.modified = modified;
         this.length = length;
@@ -105,6 +110,44 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
         return new FileScanRecord(execution, previous);
     }
 
+   public PathAuditStatus updateStatus(final FileScanRecord previous) {
+       if (previous == null) return this.auditStatus = noPreviousStatus(this.status);
+       if (this.status == previous.status) return this.auditStatus = processIdenticalStatus(this, previous);
+       return this.auditStatus = noPreviousStatus(this.status);
+    }
+
+    private static final PathAuditStatus noPreviousStatus(FileScanStatus status) {
+        switch (status) {
+            case NOTFOUND: return PathAuditStatus.NOTFOUND;
+            case DAMAGED: return PathAuditStatus.DAMAGED;
+            case DENIED: return PathAuditStatus.DENIED;
+            case IGNORED: return PathAuditStatus.IGNORED;
+            case SCANNED: return PathAuditStatus.ADDED;
+        }
+        return PathAuditStatus.ADDED;
+    }
+
+    private static PathAuditStatus processIdenticalStatus(final FileScanRecord latest, final FileScanRecord previous) {
+        if (latest.status == FileScanStatus.SCANNED && (previous.auditStatus == PathAuditStatus.VERIFIED || previous.auditStatus == PathAuditStatus.ADDED)) {
+            return checkDigests(latest, previous);
+        }
+        return previous.getAuditStatus();
+    }
+
+    private static PathAuditStatus checkDigests(final FileScanResult latest, final FileScanResult previous) {
+        if (previous == null) return noPreviousStatus(latest.getStatus());
+        for (final DigestResult result : latest.getDigestResults()) {
+            for (final DigestResult previousResult : previous.getDigestResults()) {
+                if ((result == null) || (previousResult == null)) continue;
+                if (result.getAlgorithm().equals(previousResult.getAlgorithm())) {
+                    return (result.toHexString().equals(previousResult.toHexString())) ?
+                            PathAuditStatus.VERIFIED : PathAuditStatus.CHANGED;
+                }
+            }
+        }
+        return PathAuditStatus.UNVERIFIED;
+    }
+
     PathScan execution() {
         return this.execution;
     }
@@ -122,8 +165,13 @@ public final class FileScanRecord implements org.openpreservation.fixity.core.pa
         return this.execution.getCollectionPath().getRoot().resolve(this.relativePath);
     }
 
+    @Override
     public FileScanStatus getStatus() {
         return this.status;
+    }
+
+    public PathAuditStatus getAuditStatus() {
+        return this.auditStatus;
     }
 
     private static String relativizePath(final String root, final Path relative) {

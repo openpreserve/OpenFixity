@@ -10,8 +10,8 @@
     <tbody>
     {{#scan.results}}
         <tr>
-            <td><i class='bi bi-file-check-fill'></i> {{ relativePath }}</td>
-            <td>{{{ status.symbol }}}</td>
+            <td>{{{ auditStatus.symbol }}} {{ relativePath }}</td>
+            <td>{{{ auditStatus }}}</td>
             <td>{{ length }}</td>
             <td>{{ digestRecord.shortenedDigest }}</td>
         </tr>

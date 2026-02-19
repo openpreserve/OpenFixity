@@ -42,7 +42,7 @@ i.bi-file-check {
   color: #0d8663 !important;
 }
 
-i.bi-file-plus {
+i.bi-file-plus, i.bi-file-x {
   font-size: 1.4rem !important;
   color: orange !important;
 }

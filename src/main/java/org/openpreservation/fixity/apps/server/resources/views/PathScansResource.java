@@ -47,7 +47,8 @@ public class PathScansResource {
                 CollectionPath collectionPath = dataFactory.collectionPathDAO().findByRoot(scan.getCollectionPath().getRoot()).orElseThrow(() -> new NotFoundException("CollectionPath with ID " + scan.getCollectionPath().getId() + " not found."));
                 Optional<@NonNull PathScan> previousScan = collectionPath.getLatestScan();
                 scan.setCollectionPath(collectionPath);
-                updateScan(scan, previousScan.get());
+                if (previousScan.isPresent())
+                    updateScan(scan, previousScan.get());
                 dataFactory.pathScanDAO().create(scan);
             } catch (SQLIntegrityConstraintViolationException e) {
                 throw new BadRequestException("error clearing cache", e) ;
@@ -69,13 +70,13 @@ public class PathScansResource {
         return scan.getId();
     }
 
-    private void updateScan(final PathScan latest, final PathScan previous) {
+    private void updateScan(final PathScan latest, final PathScan previousScan) {
         for (FileScanRecord result : latest.getResults()) {
-            FileScanRecord previousResult = getMatching(result, previous);
-            // result.updateStatus(previousResult);
+            FileScanRecord previousResult = getMatching(result, previousScan);
+            result.updateStatus(previousResult);
         }
-        if (previous == null) return;
-        for (FileScanRecord prevResult : previous.getResults()) {
+        if (previousScan == null) return;
+        for (FileScanRecord prevResult : previousScan.getResults()) {
             FileScanRecord latestResult = getMatching(prevResult, latest);
             if (latestResult == null) {
                 latest.addResultForDeleted(prevResult);
@@ -87,7 +88,7 @@ public class PathScansResource {
     private static FileScanRecord getMatching(FileScanRecord result, PathScan previous) {
         if (previous == null) return null;
         for (FileScanRecord previousResult : previous.getResults()) {
-            if (previousResult.getPath().equals(result.getPath())) {
+            if (previousResult.relativePath() .equals(result.relativePath())) {
                 return previousResult;
             }
         }
