@@ -1,6 +1,6 @@
 package org.openpreservation.fixity.apps.server.resources.views;
 
-import org.openpreservation.fixity.apps.server.resources.api.FoldersResource.FolderInfo;
+import org.openpreservation.fixity.apps.server.resources.api.FolderInfoResource.FolderInfo;
 import org.openpreservation.fixity.apps.server.views.FoldersView;
 
 import jakarta.ws.rs.GET;
@@ -11,9 +11,9 @@ import jakarta.ws.rs.core.Context;
 
 @Path("/folders/")
 public class FoldersResource {
-    private org.openpreservation.fixity.apps.server.resources.api.FoldersResource apiResource;
+    private org.openpreservation.fixity.apps.server.resources.api.FolderInfoResource apiResource;
     public FoldersResource(@Context ResourceContext resourceContext) {
-        this.apiResource = resourceContext.getResource(org.openpreservation.fixity.apps.server.resources.api.FoldersResource.class);
+        this.apiResource = resourceContext.getResource(org.openpreservation.fixity.apps.server.resources.api.FolderInfoResource.class);
     }
 
     @GET

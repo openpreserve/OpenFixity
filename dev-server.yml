@@ -16,9 +16,12 @@ database:
     hibernate.hbm2ddl.auto: update
 #    jakarta.persistence.schema-generation.database.action: update
     hibernate.cache.use_second_level_cache: false
-    hibernate.show_sql: true
-    hibernate.format_sql: true
+    hibernate.show_sql: false
+    hibernate.format_sql: false
     hibernate.jpa.compliance: true
+    hibernate.jdbc.batch_size: 50
+    hibernate.order_inserts: true
+    hibernate.order_updates: true
 
 
   # the maximum amount of time to wait on an empty pool before throwing an exception

@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
@@ -29,22 +31,26 @@ import jakarta.persistence.Table;
     })
 @NamedQuery(name = "Collection.getByName",query = "SELECT c FROM Collection c WHERE c.name = :name")
 @NamedQuery(name = "Collection.findAll",query = "SELECT c FROM Collection c")
+@NullMarked
 public final class Collection implements Serializable {
+    private static final long serialVersionUID = 7834951203674829153L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private @Nullable Long id;
     @Column(nullable = false, unique = true)
     private final String name;
     @Column(nullable = false)
     private final LocalDateTime created;
     @JsonManagedReference
     @OneToMany(mappedBy = "collection", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private final Set<@NonNull PathRegistration> pathRegistrations;
+    @Column(nullable = false)
+    private Set<@NonNull PathRegistration> pathRegistrations;
 
     private Collection() {
-        this(null);
+        this(""); // For JPA
     }
 
+    @SuppressWarnings("null")
     private Collection(final String name) {
         this(name, LocalDateTime.now(), new HashSet<>());
     }
@@ -55,6 +61,7 @@ public final class Collection implements Serializable {
         this.pathRegistrations = new HashSet<>(pathRegistrations);
     }
 
+    @Nullable
     public Long getId() {
         return this.id;
     }
@@ -71,20 +78,22 @@ public final class Collection implements Serializable {
         return this.pathRegistrations.size();
     }
 
+    @SuppressWarnings("null")
     public Set<@NonNull PathRegistration> getPathRegistrations() {
         return Collections.unmodifiableSet(this.pathRegistrations);
     }
 
+    @SuppressWarnings("null")
     public Set<@NonNull PathRegistration> getRegisteredPaths() {
         return Collections.unmodifiableSet(this.pathRegistrations.stream().filter(PathRegistration::isRegistered).collect(Collectors.toSet()));
     }
 
+    @SuppressWarnings("null")
     public Set<@NonNull PathRegistration> getDeRegisteredPaths() {
         return Collections.unmodifiableSet(this.pathRegistrations.stream().filter(PathRegistration::isDeRegistered).collect(Collectors.toSet()));
     }
 
-    public Collection register(PathRegistration pathRegistration) {
-        if (pathRegistration == null) throw new NullPointerException();
+    public Collection register(final PathRegistration pathRegistration) {
         this.pathRegistrations.add(pathRegistration);
         return this;
     }
@@ -98,17 +107,16 @@ public final class Collection implements Serializable {
         return Objects.hash(name, created);
     }
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable final Object obj) {
         if (this == obj)
             return true;
         if (!(obj instanceof Collection))
             return false;
-        Collection other = (Collection) obj;
+        final Collection other = (Collection) obj;
         return Objects.equals(name, other.name) && Objects.equals(created, other.created);
     }
     
     static final Collection of(final String name) {
-        if (name == null) throw new NullPointerException();
         if (name.isBlank()) throw new IllegalArgumentException("Name cannot be blank");
         return new Collection(name);
     }

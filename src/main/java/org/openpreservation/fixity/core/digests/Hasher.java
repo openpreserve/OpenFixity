@@ -7,9 +7,13 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public interface Hasher {
     /**
      * Calculate the digest of the provided InputStream message
@@ -18,52 +22,84 @@ public interface Hasher {
      * @return DigestResult The result of the digest calculation.
      * @throws java.io.IOException if an I/O error occurs during reading of the message.
      */
-    public @NonNull DigestResult hash(final InputStream message) throws IOException;
+    public Set<@NonNull DigestResult> hash(final InputStream message) throws IOException;
     /**
      * Calculate the digest of the provided byte[] message using the specified algorithm.
      *
      * @param message a byte[] containing the message to digest.
      * @return DigestResult The result of the digest calculation.
      */
-    public DigestResult hash(final byte[] message) throws IOException;
+    public Set<@NonNull DigestResult> hash(final byte[] message) throws IOException;
 
     final class HasherImpl implements Hasher {
         // Buffer size for reading streams
         private static final int BUFFER_SIZE = (8 * 1024);
-        private final MessageDigest messageDigest;
-        private HasherImpl(final Algorithms algorithm) throws NoSuchAlgorithmException {
-            this.messageDigest = MessageDigest.getInstance(algorithm.getName());
+        private final Set<@NonNull MessageDigest> messageDigest = new HashSet<>();
+        private HasherImpl(final Set<@NonNull Algorithms> algorithms) throws NoSuchAlgorithmException {
+            super();
+            if (algorithms.isEmpty()) {
+                throw new IllegalArgumentException("At least one algorithm must be provided");
+            }
+            for (final Algorithms alg : algorithms) {
+                MessageDigest md = MessageDigest.getInstance(alg.getName());
+                if (md == null) {
+                    throw new NoSuchAlgorithmException("Algorithm not found: " + alg.getName());
+                }
+                this.messageDigest.add(md);
+            }
         }
 
         @Override
-        public @NonNull DigestResult hash(final InputStream message) throws IOException {
-            this.messageDigest.reset();
-            final DigestInputStream sha1Stream = new DigestInputStream(message, this.messageDigest);
-            // Wrap them all in a buffered stream for efficiency
-            final BufferedInputStream bis = new BufferedInputStream(sha1Stream);
+        public Set<@NonNull DigestResult> hash(final InputStream message) throws IOException {
+            final DigestInputStream combinedStreams = this.combineStreams(message);
             final byte[] buff = new byte[BUFFER_SIZE];
             long totalBytes = 0L;
             long bytesRead = 0L;
-            // Read the entire stream while calculating the length
-            while ((bytesRead = bis.read(buff, 0, BUFFER_SIZE)) > -1) {
-                totalBytes += bytesRead;
+            final Set<@NonNull DigestResult> results = new HashSet<>();
+            // Wrap them all in a buffered stream for efficiency
+            try (final BufferedInputStream bis = new BufferedInputStream(combinedStreams)) {
+                // Read the entire stream while calculating the length
+                while ((bytesRead = bis.read(buff, 0, BUFFER_SIZE)) > -1) {
+                    totalBytes += bytesRead;
+                }
             }
-            // Return the new instance from the calulated details
-            try {
-                return DigestResult.of(Algorithms.fromString(this.messageDigest.getAlgorithm()), this.messageDigest.digest(), totalBytes);
-            } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException("Unexpected error calculating digest result: " + e.getMessage(), e);
+            for (final MessageDigest md : this.messageDigest) {
+                try {
+                    if (md != null) {
+                        final String algName = md.getAlgorithm();
+                        final byte[] digestBytes = md.digest();
+                        if (algName != null && digestBytes != null) {
+                            results.add(DigestResult.of(Algorithms.fromString(algName), digestBytes, totalBytes));
+                        }
+                    }
+                } catch (NoSuchAlgorithmException e) {
+                    throw new IllegalStateException("Unexpected error calculating digest result: " + e.getMessage(), e);
+                }
             }
+            return results;
+        }
+
+        private DigestInputStream combineStreams(final InputStream message) {
+            DigestInputStream combinedStream = null;
+            for (final MessageDigest md : this.messageDigest) {
+                md.reset();
+                combinedStream = (combinedStream == null) ? new DigestInputStream(message, md) : new DigestInputStream(combinedStream, md);
+            }
+            if (combinedStream == null) {
+                throw new IllegalStateException("Failed to combine streams: no MessageDigests available");
+            }
+            return combinedStream;
         }
 
         @Override
-        public DigestResult hash(final byte[] message) throws IOException {
+        public Set<@NonNull DigestResult> hash(final byte[] message) throws IOException {
             // Implementation goes here
             return this.hash(new ByteArrayInputStream(message));
         }
     }
 
-    public static Hasher instance(final Algorithms algorithm) throws NoSuchAlgorithmException {
-        return new HasherImpl(algorithm);
+    
+    public static Hasher instance(final Set<@NonNull Algorithms> algorithms) throws NoSuchAlgorithmException {
+        return new HasherImpl(algorithms);
     }
 }

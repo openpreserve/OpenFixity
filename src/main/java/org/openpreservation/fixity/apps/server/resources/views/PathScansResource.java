@@ -1,31 +1,26 @@
 package org.openpreservation.fixity.apps.server.resources.views;
 
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
-import org.jspecify.annotations.NonNull;
-import org.openpreservation.fixity.apps.dao.CollectionPath;
 import org.openpreservation.fixity.apps.dao.DataFactory;
-import org.openpreservation.fixity.apps.dao.FileScanRecord;
+import org.openpreservation.fixity.apps.dao.FolderScanRecord;
 import org.openpreservation.fixity.apps.dao.PathScan;
+import org.openpreservation.fixity.apps.server.exceptions.OpenFixityException;
 import org.openpreservation.fixity.apps.server.views.PathScanView;
 import org.openpreservation.fixity.apps.server.views.PathScansView;
 
 import io.dropwizard.hibernate.UnitOfWork;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Response;
 
 @Path("/scans")
 public class PathScansResource {
     private final DataFactory dataFactory;
-    private static final Map<Long,PathScan> scanCache = new ConcurrentHashMap<>();
+
     public PathScansResource(final DataFactory dataFactory) {
         super();
         this.dataFactory = dataFactory;
@@ -38,61 +33,40 @@ public class PathScansResource {
     }
 
     @UnitOfWork
-    @POST
-    public Response clearScanCache() {
-        for (PathScan scan : scanCache.values()) {
-            try {
-                scanCache.remove(scan.getId());
-                scan.setId(null);
-                CollectionPath collectionPath = dataFactory.collectionPathDAO().findByRoot(scan.getCollectionPath().getRoot()).orElseThrow(() -> new NotFoundException("CollectionPath with ID " + scan.getCollectionPath().getId() + " not found."));
-                Optional<@NonNull PathScan> previousScan = collectionPath.getLatestScan();
-                scan.setCollectionPath(collectionPath);
-                if (previousScan.isPresent())
-                    updateScan(scan, previousScan.get());
-                dataFactory.pathScanDAO().create(scan);
-            } catch (SQLIntegrityConstraintViolationException e) {
-                throw new BadRequestException("error clearing cache", e) ;
-            }
+    @GET
+    @Path("/{scanId}/")
+    public PathScanView getScan(@PathParam("scanId") Long scanId) {
+        if (scanId == null) {
+            throw OpenFixityException.of(new BadRequestException("PathScan ID can not be null."), "PathScan.id: " + scanId);
         }
-        return Response.ok().build();
+        try {
+            PathScan scan = dataFactory.pathScanDAO().findById(scanId);
+            List<FolderScanRecord> allFolders = dataFactory.folderScanRecordDAO().findByPathScan(scan);
+            FolderScanRecord rootFolder = FolderScanRecord.findRoot(allFolders);
+            List<FolderScanRecord> subfolders = FolderScanRecord.directChildren(allFolders, "");
+            return new PathScanView(scan, rootFolder, subfolders, null);
+        } catch (NoResultException e) {
+            throw OpenFixityException.of(new NotFoundException("PathScan with id " + scanId + " not found.", e), "PathScan.id: " + scanId);
+        }
     }
 
     @UnitOfWork
     @GET
-    @Path("/{scanId}/")
-    public PathScanView getScan(@PathParam("scanId") Long scanId) {
-        PathScan scan = dataFactory.pathScanDAO().findById(scanId).orElseThrow(() -> new NotFoundException("No scan found with id: " + scanId));
-        return new PathScanView(scan);
-    }
-
-    public static Long addScan(PathScan scan) {
-        scanCache.putIfAbsent(scan.getId(), scan);
-        return scan.getId();
-    }
-
-    private void updateScan(final PathScan latest, final PathScan previousScan) {
-        for (FileScanRecord result : latest.getResults()) {
-            FileScanRecord previousResult = getMatching(result, previousScan);
-            result.updateStatus(previousResult);
+    @Path("/{scanId}/folders/{folderId}/")
+    public PathScanView getScanFolder(@PathParam("scanId") Long scanId,
+                                      @PathParam("folderId") Long folderId) {
+        if (scanId == null) {
+            throw OpenFixityException.of(new BadRequestException("PathScan ID can not be null."), "PathScan.id: " + scanId);
         }
-        if (previousScan == null) return;
-        for (FileScanRecord prevResult : previousScan.getResults()) {
-            FileScanRecord latestResult = getMatching(prevResult, latest);
-            if (latestResult == null) {
-                latest.addResultForDeleted(prevResult);
-            }
-            
+        try {
+            PathScan scan = dataFactory.pathScanDAO().findById(scanId);
+            FolderScanRecord folder = dataFactory.folderScanRecordDAO().findById(folderId);
+            List<FolderScanRecord> allFolders = dataFactory.folderScanRecordDAO().findByPathScan(scan);
+            List<FolderScanRecord> subfolders = FolderScanRecord.directChildren(allFolders, folder.getRelativePath());
+            Long parentId = FolderScanRecord.parentId(allFolders, folder);
+            return new PathScanView(scan, folder, subfolders, parentId);
+        } catch (NoResultException e) {
+            throw OpenFixityException.of(new NotFoundException("Folder or scan not found.", e), "scanId: " + scanId + ", folderId: " + folderId);
         }
     }
-
-    private static FileScanRecord getMatching(FileScanRecord result, PathScan previous) {
-        if (previous == null) return null;
-        for (FileScanRecord previousResult : previous.getResults()) {
-            if (previousResult.relativePath() .equals(result.relativePath())) {
-                return previousResult;
-            }
-        }
-        return null;
-    }
-
 }

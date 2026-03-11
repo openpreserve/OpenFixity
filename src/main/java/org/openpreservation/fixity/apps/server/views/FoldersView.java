@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.Stack;
 
-import org.openpreservation.fixity.apps.server.resources.api.FoldersResource.FolderInfo;
+import org.openpreservation.fixity.apps.server.resources.api.FolderInfoResource.FolderInfo;
 
 public class FoldersView extends FixityAppView {
     private final FolderInfo folderInfo;

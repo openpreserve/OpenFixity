@@ -8,13 +8,13 @@
     </tr>
     </thead>
     <tbody>
-    {{#scan.results}}
+    {{#folder.files}}
         <tr>
             <td>{{{ auditStatus.symbol }}} {{ relativePath }}</td>
             <td>{{{ auditStatus }}}</td>
             <td>{{ length }}</td>
             <td>{{ digestRecord.shortenedDigest }}</td>
         </tr>
-    {{/scan.results}}
+    {{/folder.files}}
     </tbody>
 </table>

@@ -5,15 +5,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An interface defining the result of a digest calculation.
  */
+@NullMarked
 public interface DigestResult extends Serializable {
     /**
      * Get the String identifier of the algorithm used to create this digest.
@@ -49,13 +51,13 @@ public interface DigestResult extends Serializable {
 
         private DigestResultImpl() {
             this.algorithm = Algorithms.DEFAULT;
-            this.digestBytes = this.algorithm.getNullHex().getBytes(StandardCharsets.UTF_8);
+            this.digestBytes = this.algorithm.getNullBytes();
             this.messageLength = "".getBytes(StandardCharsets.UTF_8).length;
         }
 
         private DigestResultImpl(
                 final Algorithms algorithm,
-                final byte[] digestBytes,
+                final byte @NonNull [] digestBytes,
                 final long messageLength) {
             this.algorithm = algorithm;
             this.digestBytes = digestBytes;
@@ -69,11 +71,11 @@ public interface DigestResult extends Serializable {
 
         @Override
         public String toHexString() {
-            return HexFormat.of().formatHex(this.digestBytes);
+            return Algorithms.formatHex(this.digestBytes);
         }
 
         @Override
-        public byte[] getDigestBytes() {
+        public byte @NonNull [] getDigestBytes() {
             return this.digestBytes;
         }
 
@@ -97,7 +99,7 @@ public interface DigestResult extends Serializable {
         }
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(@Nullable Object obj) {
             if (this == obj)
                 return true;
             if (!(obj instanceof DigestResultImpl))
@@ -108,6 +110,7 @@ public interface DigestResult extends Serializable {
         }
 
         @Override
+        @SuppressWarnings("null")
         public String toString() {
             final StringBuilder builder = new StringBuilder();
             builder.append("DigestResultImpl [");
@@ -122,10 +125,12 @@ public interface DigestResult extends Serializable {
             return builder.toString();
         }
     }
-    public static final Map<Algorithms, DigestResult> NULL_DIGESTS = nullDigests();
+    public static final Map<@NonNull Algorithms, @NonNull DigestResult> NULL_DIGESTS = nullDigests();
+    @SuppressWarnings("null")
     public static final DigestResult DEFAULT_NULL_DIGEST = NULL_DIGESTS.get(Algorithms.DEFAULT);
 
-    private static Map<Algorithms, DigestResult> nullDigests() {
+    @SuppressWarnings("null")
+    private static Map<@NonNull Algorithms, @NonNull DigestResult> nullDigests() {
         final Map<Algorithms, DigestResult> nulls = new HashMap<>();
         for (Algorithms algorithm : Algorithms.AVAILABLE) {
             nulls.put(algorithm, new DigestResultImpl(algorithm, algorithm.getNullBytes(), 0L));
@@ -140,16 +145,14 @@ public interface DigestResult extends Serializable {
      * @param messageLength the length of the original message.
      * @return a DigestResult instance.
      */
-    public static @NonNull DigestResult of(
+    public static DigestResult of(
             final Algorithms algorithm,
-            final byte[] digestBytes,
+            final byte @NonNull[] digestBytes,
             final long messageLength) {
-        if (algorithm == null || !Algorithms.AVAILABLE.contains(algorithm)) {
+        if (!Algorithms.AVAILABLE.contains(algorithm)) {
             throw new IllegalArgumentException("algorithm argument is null or not a supported digest algorithm");
         }
-        if (digestBytes == null) {
-            throw new IllegalArgumentException("digestBytes argument is null or has zero length");
-        } else if (digestBytes.length != NULL_DIGESTS.get(algorithm).getDigestLength()) {
+        if (digestBytes.length != NULL_DIGESTS.get(algorithm).getDigestLength()) {
             throw new IllegalArgumentException(String.format("digestBytes argument length %d does not match expected length %d for algorithm %s",
                                                              digestBytes.length, NULL_DIGESTS.get(algorithm).getDigestLength(),
                                                              algorithm));

@@ -11,7 +11,7 @@
       Scan this path and check on collections it's registered to and scheduling.
     </p>
     <p>
-      <a href="/collections/{{ collection.id }}/scan" class="btn btn-outline-primary btn-sm">Scan Now</a> Plus hidden and filter options.
+      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#algorithmsModal" onClick="scanPath({{ collectionPath.id }})">Scan Now</button> Plus hidden and filter options.
     </p>
     <p>
       Schedule:
@@ -19,9 +19,29 @@
     <h2>Path Registrations</h2>
     {{> partials/tables/registrations }}
   </div><!-- end container -->
+  {{> partials/modals/algorithms}}
   {{> partials/modals/scan}}
   {{> partials/modals/registration}}
   {{> partials/footer}}
+  <script>
+    $(document).ready(function() {
+      $.get("/api/digests/algorithms/", function (algorithms) {
+        var checked = ""
+        const defaultAlgorithm = "{{ defaultAlgorithm }}"
+        for (const algorithm of algorithms) {
+          if (algorithm === defaultAlgorithm) {
+            checked = "checked"
+          }
+          $('#algorithmsRadioGroup').append(
+            `<input type="radio" class="btn-check" name="algorithmsRadio" id="algorithmsRadio${algorithm}" autocomplete="off" value="${algorithm}" ${checked}>` +
+            `<label class="btn btn-outline-primary" for="algorithmsRadio${algorithm}">${algorithm}</label>`
+          );
+          checked = ""
+        }
+      });
+    });
+  </script>
+  <script src="/js/modals.js"></script>
   <script src="/js/scan.js"></script>
 </body>
 </html>

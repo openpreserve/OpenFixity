@@ -20,11 +20,17 @@ public class ScheduleManager {
 
     static {
         try {
-            scheduler = new StdSchedulerFactory().getScheduler();
+            scheduler = new StdSchedulerFactory()
+                    .getAllSchedulers()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> 
+                            new IllegalStateException("Failed to initialize scheduler: No schedulers found"));
         } catch (final SchedulerException e) {
             throw new IllegalStateException("Failed to initialize scheduler", e);
         }
     }
+
     public static void start() throws SchedulerException {
         if (!scheduler.isStarted()) {
             scheduler.start();
@@ -61,7 +67,6 @@ public class ScheduleManager {
                 .build();
 
         scheduler.scheduleJob(jobDetail, parseTrigger(scanJobDetails));
-        scheduler.start();
         return jobDetail;
     }
 
@@ -89,7 +94,6 @@ public class ScheduleManager {
                 .build();
 
         scheduler.scheduleJob(jobDetail, trigger);
-        scheduler.start();
         return jobDetail;
     }
 

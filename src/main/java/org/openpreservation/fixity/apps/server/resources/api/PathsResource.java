@@ -4,14 +4,17 @@ import java.nio.file.Path;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
+import org.jspecify.annotations.NonNull;
 import org.openpreservation.fixity.apps.dao.CollectionPath;
 import org.openpreservation.fixity.apps.dao.DataFactory;
 import org.openpreservation.fixity.apps.schedule.ScanJobDetails;
 import org.openpreservation.fixity.apps.schedule.ScheduleManager;
+import org.openpreservation.fixity.apps.server.exceptions.OpenFixityException;
 import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 
 import io.dropwizard.hibernate.UnitOfWork;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
@@ -30,8 +33,8 @@ public class PathsResource {
 
     @UnitOfWork
     @GET
-    public List<CollectionPath> getPaths() {
-        List<CollectionPath> collections = dataFactory.collectionPathDAO().findAll();
+    public @NonNull List<@NonNull CollectionPath> getPaths() {
+        @NonNull List<@NonNull CollectionPath> collections = dataFactory.collectionPathDAO().findAll();
         return collections;
     }
 
@@ -39,18 +42,30 @@ public class PathsResource {
     @GET
     @jakarta.ws.rs.Path("/{folderId}/")
     public CollectionPath getPath(@PathParam("folderId") final Long folderId) {
-        return dataFactory.collectionPathDAO().findById(folderId).orElseThrow(() -> new NotFoundException("Collection with ID " + folderId + " not found."));
+        if (folderId == null) {
+            throw OpenFixityException.of(new BadRequestException("Path ID cannot be null."), "Path.id: " + folderId);
+        }
+        try {
+            return dataFactory.collectionPathDAO().findById(folderId);
+        } catch (Exception e) {
+            throw OpenFixityException.of(new NotFoundException("Collection with ID " + folderId + " not found.", e), "Path.id" + folderId);
+        }
     }
 
     @UnitOfWork
     @POST
     @jakarta.ws.rs.Path("/{folderId}/")
     public CollectionPath createPath(@PathParam("folderId") final int folderId) {
-        Path folder = FoldersResource.getPathById(folderId);
+        Path folder = FolderInfoResource.getPathById(folderId);
         try {
-            if (folder == null) throw new NotFoundException("Folder with ID " + folderId + " not found.");
-            CollectionPath existingPath = dataFactory.collectionPathDAO().findByRoot(folder).orElse(null);
-            if (existingPath != null) throw new SQLIntegrityConstraintViolationException("Folder with path " + folder.toAbsolutePath().toString() + " already exists.");
+            dataFactory.collectionPathDAO().findByRoot(folder);
+            throw OpenFixityException
+                    .of(new BadRequestException("Folder with path " + folder.toAbsolutePath().toString() + " already exists."),
+                        "Path.root" + folder.toAbsolutePath().toString());
+        } catch (NoResultException e) {
+            // Expected, continue with creation
+        }
+        try {
             return dataFactory.collectionPathDAO().create(CollectionPath.of(folder));
         } catch (SQLIntegrityConstraintViolationException e) {
             throw new BadRequestException("Folder with path " + folder.toAbsolutePath().toString() + " already exists.");
@@ -69,14 +84,19 @@ public class PathsResource {
     @POST
     @jakarta.ws.rs.Path("/{pathId}/scan/{algorithm}/")
     public JobDetail scanPath(@PathParam("pathId") final Long pathId, @Encoded @PathParam("algorithm") final String algorithm) {
-        CollectionPath collectionPath = dataFactory.collectionPathDAO().findById(pathId).orElseThrow(() -> new NotFoundException("CollectionPath with ID " + pathId + " not found."));
-        ScanJobDetails jobDetails = ScanJobDetails.of(collectionPath.getJobId(),
-                                                      "User",
-                                                      "",
-                                                      collectionPath.getFullPath(),
-                                                      algorithm);
+        if (pathId == null) {
+            throw OpenFixityException.of(new BadRequestException("Path ID cannot be null."), "Path.id: " + pathId);
+        }
         try {
+            CollectionPath collectionPath = dataFactory.collectionPathDAO().findById(pathId);
+            ScanJobDetails jobDetails = ScanJobDetails.of(collectionPath.getJobId(),
+                                                        "User",
+                                                        "",
+                                                        collectionPath.getFullPath(),
+                                                        algorithm);
             return ScheduleManager.scheduleScan(jobDetails);
+        } catch (NoResultException e) {
+            throw OpenFixityException.of(new NotFoundException("CollectionPath with ID " + pathId + " not found.", e), "Path.id" + pathId);
         } catch (SchedulerException e) {
             throw new InternalServerErrorException("Failed to schedule scan job: " + e.getMessage(), e);
         }

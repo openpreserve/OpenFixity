@@ -1,22 +1,18 @@
 package org.openpreservation.fixity.apps.server;
 
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.hibernate.SessionFactory;
 import org.jspecify.annotations.NonNull;
 import org.openpreservation.fixity.apps.dao.Collection;
-import org.openpreservation.fixity.apps.dao.CollectionDAO;
 import org.openpreservation.fixity.apps.dao.CollectionPath;
-import org.openpreservation.fixity.apps.dao.CollectionPathDAO;
 import org.openpreservation.fixity.apps.dao.DataFactory;
 import org.openpreservation.fixity.apps.dao.DigestRecord;
 import org.openpreservation.fixity.apps.dao.FileScanRecord;
-import org.openpreservation.fixity.apps.dao.FileScanRecordDAO;
+import org.openpreservation.fixity.apps.dao.FolderScanRecord;
 import org.openpreservation.fixity.apps.dao.PathRegistration;
-import org.openpreservation.fixity.apps.dao.PathRegistrationDAO;
 import org.openpreservation.fixity.apps.dao.PathScan;
-import org.openpreservation.fixity.apps.dao.PathScanDAO;
 import org.openpreservation.fixity.apps.dao.PathSummaryRecord;
 import org.openpreservation.fixity.apps.schedule.JobDetailSerializer;
-import org.openpreservation.fixity.apps.schedule.ScheduleManager;
 import org.openpreservation.fixity.apps.server.config.OpenFixityConfiguration;
 import org.openpreservation.fixity.apps.server.exceptions.OpenFixityExceptionMapper;
 import org.openpreservation.fixity.apps.server.exceptions.RFC7807Details;
@@ -54,13 +50,14 @@ import jakarta.ws.rs.core.MediaType;
 public class OpenFixityServer extends Application<OpenFixityConfiguration> {
     private static final String NAME = "open-fixity-rest"; //$NON-NLS-1$
     private static OpenFixityConfiguration configuration;
-    private static final ScheduleManager scheduler = new ScheduleManager();
     public static DataFactory dataFactory;
+    public static OpenFixityServer application;
     private final HibernateBundle<OpenFixityConfiguration> hibernate =
         new HibernateBundle<OpenFixityConfiguration>(Collection.class,
                                                      CollectionPath.class,
                                                      DigestRecord.class,
                                                      FileScanRecord.class,
+                                                     FolderScanRecord.class,
                                                      PathRegistration.class,
                                                      PathScan.class,
                                                      PathSummaryRecord.class)
@@ -101,6 +98,7 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
     public void run(OpenFixityConfiguration configuration, Environment environment) {
         // Add health checks
         // Set up servlets session handler
+        application = this;
         environment.servlets().setSessionHandler(new SessionHandler());
         setConfiguration(configuration);
         registerResources(environment);
@@ -111,12 +109,9 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
         });
     }
 
+    @SuppressWarnings("null")
     public void registerResources(Environment environment) {
-        dataFactory = new DataFactory(new CollectionDAO(hibernate.getSessionFactory()),
-                                      new CollectionPathDAO(hibernate.getSessionFactory()),
-                                      new PathRegistrationDAO(hibernate.getSessionFactory()),
-                                      new FileScanRecordDAO(hibernate.getSessionFactory()),
-                                      new PathScanDAO(hibernate.getSessionFactory()));
+        dataFactory = new DataFactory(hibernate.getSessionFactory());
         // Setup exception mapping to integrate ESafe exceptions with appropriate HTTP
         // codes
         environment.jersey().register(new ErrorEntityWriter<RFC7807Details, @NonNull FixityAppView>(MediaType.TEXT_HTML_TYPE, FixityAppView.class) {
@@ -125,29 +120,42 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
                 return new ErrorView(message);
             }
         });
+        environment.lifecycle().manage(new QuartzManager());
         environment.jersey().register(new OpenFixityExceptionMapper());
         environment.jersey().register(new WebApplicationExceptionMapper());
         environment.jersey().register(new IndexResource());
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.CollectionsResource(dataFactory));
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.PathsResource(dataFactory));
         environment.jersey().register(org.openpreservation.fixity.apps.server.resources.api.DigestsResource.class);
-        environment.jersey().register( org.openpreservation.fixity.apps.server.resources.api.FoldersResource.class);
+        environment.jersey().register( org.openpreservation.fixity.apps.server.resources.api.FolderInfoResource.class);
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.views.CollectionsResource(dataFactory));
         environment.jersey().register(org.openpreservation.fixity.apps.server.resources.views.FoldersResource.class);
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.views.PathsResource(dataFactory));
         environment.jersey().register(new PathScansResource(dataFactory));
         environment.jersey().register(new JobsResource());
         environment.jersey().register(new SchedulerResource());
+        environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.ScanResultsResource(dataFactory));
     }
 
     public static final OpenFixityConfiguration getConfiguration() {
         return configuration;
     }
-    
-    public static final ScheduleManager getScheduler() {
-        return scheduler;
+
+    public static final synchronized @NonNull HibernateBundle<OpenFixityConfiguration> getHibernate() {
+        if (application.hibernate == null) {
+            throw new IllegalStateException("Hibernate has not been initialized yet");
+        }
+        return application.hibernate;
     }
 
+    public static final synchronized @NonNull SessionFactory getSessionFactory() {
+        SessionFactory sessionFactory = application.hibernate.getSessionFactory();
+        if (sessionFactory == null) {
+            throw new IllegalStateException("SessionFactory has not been initialized yet");
+        }
+        return sessionFactory;
+    }
+    
     private static final synchronized OpenFixityConfiguration setConfiguration(final OpenFixityConfiguration config) {
         configuration = config;
         return configuration;

@@ -3,6 +3,7 @@ package org.openpreservation.fixity.apps.server.resources.api;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,15 +16,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 
+import org.jspecify.annotations.NonNull;
+import org.openpreservation.fixity.apps.server.exceptions.OpenFixityException;
 import org.openpreservation.fixity.apps.server.resources.OS;
 import org.openpreservation.fixity.core.paths.PathScanner;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.PathParam;
 
 @jakarta.ws.rs.Path("/api/folders")
-public class FoldersResource {
+public class FolderInfoResource {
     public static final class FolderInfo {
         private static boolean isHidden(final Path path) {
             try {
@@ -167,11 +171,12 @@ public class FoldersResource {
                 final int childId = hashPath(child);
                 cachedFolders.put(childId, child.toAbsolutePath());
                 children.add(new FolderInfo(child));
-
             }
         } catch (final FileNotFoundException e) {
             throw new NotFoundException("Path with ID " + folderId + " not found on filesystem.");
-        }
+        } catch (AccessDeniedException e) {
+            throw new jakarta.ws.rs.ForbiddenException("Access denied to path with ID " + folderId + ".");
+        } 
         return children;
     }
 
@@ -196,13 +201,14 @@ public class FoldersResource {
         return new FolderInfo(getPathById(defaultRoot));
     }
 
+    @NonNull
     static Path getPathById(final int folderId) {
         Path path = cachedFolders.get(folderId);
         if (path == null) {
             path = roots.get(folderId);
         }
         if (path == null) {
-            throw new NotFoundException("Path with ID " + folderId + " not found.");
+            throw OpenFixityException.of(new InternalServerErrorException("Path with ID " + folderId + " not found."), "Folder ID: " + folderId);
         }
         return path;
     }

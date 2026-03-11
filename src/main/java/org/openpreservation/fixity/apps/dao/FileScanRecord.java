@@ -8,11 +8,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.openpreservation.fixity.core.digests.DigestResult;
 import org.openpreservation.fixity.core.paths.FileScanResult;
 import org.openpreservation.fixity.core.paths.FileScanStatus;
+import org.openpreservation.fixity.core.paths.Folder;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -25,61 +28,73 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 
 @Entity()
 @Table()
+@NamedQuery(name = "FileScanRecord.findAll", query = "SELECT fsr FROM FileScanRecord fsr")
+@NullMarked
 public final class FileScanRecord implements FileScanResult, Serializable {
+    private static final long serialVersionUID = 8359274652193847123L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @JsonBackReference
+    private @Nullable Long id;
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "path_scan_id", nullable = false)
     private final PathScan execution;
-    @Column(nullable = false)
+    @Column(nullable = false, length = 65535)
     private final String relativePath;
     @Column(nullable = false)
     private PathAuditStatus auditStatus;
     @Column(nullable = true)
-    private final Long length;
+    private final @Nullable Long length;
     @Column(nullable = true)
-    private final LocalDateTime created;
+    private final @Nullable LocalDateTime created;
     @Column(nullable = true)
-    private final LocalDateTime modified;
+    private final @Nullable LocalDateTime modified;
     @Column(nullable = false)
     private final LocalDateTime scanned;
     @Column(nullable = false)
     private final FileScanStatus status;
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", nullable = false)
+    private FolderScanRecord folder;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @JoinTable(name = "digest_calculation",
         joinColumns = @jakarta.persistence.JoinColumn(name = "file_content_result_id"),
-        inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "digest_result_id")   
+        inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "digest_result_id")
     )
-    private final Set<DigestRecord> digestResults = new LinkedHashSet<>();
+    private Set<DigestRecord> digestResults = new LinkedHashSet<>();
+
+    @SuppressWarnings("null")
     private FileScanRecord() {
         // For JPA
         this(null, null, null, null, null, null, null, null, null);
     }
 
-    private FileScanRecord(final PathScan execution, final FileScanResult result) { 
+    @SuppressWarnings("null")
+    private FileScanRecord(final PathScan execution, final FileScanResult result) {
         this(execution,
-             relativizePath(execution.getCollectionPath().getRoot().toString(), result.getPath() ),
-             PathAuditStatus.ADDED,
+             Folder.relativise(execution.getCollectionPath().getRoot().toString(), result.getPath()),
+             noPreviousStatus(result.getStatus()),
              result.getLength(),
              result.getCreated(),
              result.getModified(),
              result.getScanned(),
              result.getStatus(),
              result.getDigestResults().stream().map(DigestRecord::of).collect(Collectors.toSet()));
-        }
+    }
 
     private FileScanRecord(final PathScan execution,
                            final String relativePath,
                            final PathAuditStatus auditStatus,
-                           final Long length,
-                           final LocalDateTime created,
-                           final LocalDateTime modified,
+                           final @Nullable Long length,
+                           final @Nullable LocalDateTime created,
+                           final @Nullable LocalDateTime modified,
                            final LocalDateTime scanned,
                            final FileScanStatus status,
                            final Set<DigestRecord> digestResults) {
@@ -96,24 +111,28 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     }
 
     public static final FileScanRecord of(final PathScan execution, final FileScanResult result) {
-        if ((result == null) || (execution == null)) throw new NullPointerException("FileScanResult or PathScan is null");
         if (!result.getPath().startsWith(execution.getCollectionPath().getRoot()))
             throw new IllegalArgumentException("Path " + result.getPath() + " is not under root " + execution.getCollectionPath().getRoot());
-        if (result.getDigestResults() == null) throw new IllegalArgumentException("FileScanResult digestResults is null");
         return new FileScanRecord(execution, result);
     }
 
     public static final FileScanRecord deleted(final PathScan execution, final FileScanRecord previous) {
-        if ((previous == null) || (execution == null)) throw new NullPointerException("FileScanResult or PathScan is null");
         if (!previous.getPath().startsWith(execution.getCollectionPath().getRoot()))
             throw new IllegalArgumentException("Path " + previous.getPath() + " is not under root " + execution.getCollectionPath().getRoot());
-        return new FileScanRecord(execution, previous);
+        return new FileScanRecord(execution,
+                Folder.relativise(execution.getCollectionPath().getRoot().toString(), previous.getPath()),
+                PathAuditStatus.NOTFOUND,
+                previous.length,
+                previous.created,
+                previous.modified,
+                previous.scanned,
+                previous.status,
+                previous.digestResults);
     }
 
-   public PathAuditStatus updateStatus(final FileScanRecord previous) {
-       if (previous == null) return this.auditStatus = noPreviousStatus(this.status);
-       if (this.status == previous.status) return this.auditStatus = processIdenticalStatus(this, previous);
-       return this.auditStatus = noPreviousStatus(this.status);
+    public PathAuditStatus updateStatus(final FileScanRecord previous) {
+        if (this.status == previous.status) return this.auditStatus = processIdenticalStatus(this, previous);
+        return this.auditStatus = noPreviousStatus(this.status);
     }
 
     private static final PathAuditStatus noPreviousStatus(FileScanStatus status) {
@@ -128,6 +147,9 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     }
 
     private static PathAuditStatus processIdenticalStatus(final FileScanRecord latest, final FileScanRecord previous) {
+        if (latest.status == FileScanStatus.SCANNED && previous.auditStatus == PathAuditStatus.NOTFOUND) {
+            return PathAuditStatus.ADDED;
+        }
         if (latest.status == FileScanStatus.SCANNED && (previous.auditStatus == PathAuditStatus.VERIFIED || previous.auditStatus == PathAuditStatus.ADDED)) {
             return checkDigests(latest, previous);
         }
@@ -135,17 +157,28 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     }
 
     private static PathAuditStatus checkDigests(final FileScanResult latest, final FileScanResult previous) {
-        if (previous == null) return noPreviousStatus(latest.getStatus());
         for (final DigestResult result : latest.getDigestResults()) {
             for (final DigestResult previousResult : previous.getDigestResults()) {
-                if ((result == null) || (previousResult == null)) continue;
                 if (result.getAlgorithm().equals(previousResult.getAlgorithm())) {
-                    return (result.toHexString().equals(previousResult.toHexString())) ?
+                    return result.toHexString().equals(previousResult.toHexString()) ?
                             PathAuditStatus.VERIFIED : PathAuditStatus.CHANGED;
                 }
             }
         }
         return PathAuditStatus.UNVERIFIED;
+    }
+
+    @Nullable
+    public Long getId() {
+        return this.id;
+    }
+
+    public FolderScanRecord getFolder() {
+        return this.folder;
+    }
+
+    void setFolder(final FolderScanRecord folder) {
+        this.folder = folder;
     }
 
     PathScan execution() {
@@ -156,6 +189,7 @@ public final class FileScanRecord implements FileScanResult, Serializable {
         return this.relativePath;
     }
 
+    @Nullable
     public DigestRecord getDigestRecord() {
         return this.digestResults.stream().findFirst().orElse(null);
     }
@@ -174,11 +208,8 @@ public final class FileScanRecord implements FileScanResult, Serializable {
         return this.auditStatus;
     }
 
-    private static String relativizePath(final String root, final Path relative) {
-        return Path.of(root).relativize(relative).toString();
-    }
-
     @Override
+    @Nullable
     public LocalDateTime getCreated() {
         return this.created;
     }
@@ -194,6 +225,7 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     }
 
     @Override
+    @Nullable
     public LocalDateTime getModified() {
         return this.modified;
     }

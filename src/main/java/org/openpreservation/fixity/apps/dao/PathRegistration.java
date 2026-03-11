@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
@@ -20,10 +23,13 @@ import jakarta.persistence.Table;
 @Entity(name = "PathRegistration")
 @Table(name = "PathRegistration")
 @NamedQuery(name = "PathRegistration.getByPath", query = "SELECT pr FROM PathRegistration pr WHERE pr.collectionPath.id = :pathId AND pr.collection.id = :collectionId AND pr.deregisteredAt IS NULL")
+@NamedQuery(name = "PathRegistration.findAll", query = "SELECT pr FROM PathRegistration pr")
+@NullMarked
 public final class PathRegistration implements Serializable {
+    private static final long serialVersionUID = 921387465012345678L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private @Nullable Long id;
     @JsonBackReference
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "collection_id")
@@ -34,9 +40,11 @@ public final class PathRegistration implements Serializable {
     private final CollectionPath collectionPath;
     @Column(nullable = false)
     private final LocalDateTime registeredAt;
-    private LocalDateTime deregisteredAt;
+    private @Nullable LocalDateTime deregisteredAt;
 
+    @SuppressWarnings("null")
     private PathRegistration() {
+        // For JPA - fields populated by reflection
         this(null, null);
     }
 
@@ -44,15 +52,15 @@ public final class PathRegistration implements Serializable {
         super();
         this.collection = collection;
         this.collectionPath = collectionPath;
-        this.registeredAt = LocalDateTime.now();
+        this.registeredAt = now();
         this.deregisteredAt = null;
     }
 
     public static final PathRegistration of(final Collection collection, final CollectionPath collectionPath) {
-        if ((collection == null) || (collectionPath == null)) throw new NullPointerException();
         return new PathRegistration(collection, collectionPath);
     }
 
+    @Nullable
     public Long id() {
         return this.id;
     }
@@ -69,12 +77,13 @@ public final class PathRegistration implements Serializable {
         return this.registeredAt;
     }
 
+    @Nullable
     public LocalDateTime getDeregisteredAt() {
         return this.deregisteredAt;
     }
 
     public LocalDateTime deregister() {
-        return this.deregisteredAt = LocalDateTime.now();
+        return this.deregisteredAt = now();
     }
 
     public boolean isDeRegistered() {
@@ -91,7 +100,7 @@ public final class PathRegistration implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(@Nullable Object obj) {
         if (this == obj)
             return true;
         if (!(obj instanceof PathRegistration))
@@ -102,5 +111,9 @@ public final class PathRegistration implements Serializable {
                 && Objects.equals(deregisteredAt, other.deregisteredAt);
     }
 
+    @SuppressWarnings("null")
+    private static final LocalDateTime now() {
+        return LocalDateTime.now();
+    }
     
 }

@@ -1,9 +1,11 @@
 package org.openpreservation.fixity.apps.dao;
 
-import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.openpreservation.fixity.core.digests.Algorithms;
 import org.openpreservation.fixity.core.digests.DigestResult;
 
@@ -19,10 +21,12 @@ import jakarta.persistence.Table;
 
 @Entity()
 @Table()
+@NullMarked
 public class DigestRecord implements DigestResult {
+    private static final long serialVersionUID = 7263849201847563921L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+    Long id = -1L;
     @Column(nullable = false)
     private final Algorithms algorithm;
     @Column(nullable = false)
@@ -30,7 +34,7 @@ public class DigestRecord implements DigestResult {
     @Column(nullable = false)
     private final long messageLength;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private final Set<FileScanRecord> fileScans;
+    private Set<FileScanRecord> fileScans;
 
     private DigestRecord() {
         this(Algorithms.DEFAULT, Algorithms.DEFAULT.getNullHex(), 0L);
@@ -49,6 +53,7 @@ public class DigestRecord implements DigestResult {
     }
 
     @Override
+    @NonNull
     public Algorithms getAlgorithm() {
         return this.algorithm;
     }
@@ -59,12 +64,13 @@ public class DigestRecord implements DigestResult {
     }
 
     public String getShortenedDigest() {
-        return this.algorithm + ": " + (this.digest.length() > 8 ? this.digest.substring(0, 8) + "..." : this.digest);
+        return this.algorithm.getName() + ": " + (this.digest.length() > 8 ? this.digest.substring(0, 8) + "..." : this.digest);
     }
 
     @Override
-    public byte[] getDigestBytes() {
-        return this.digest.getBytes(StandardCharsets.UTF_8);
+    public byte @NonNull[] getDigestBytes() {
+        final byte[] bytes = HexFormat.of().parseHex(this.digest);
+        return (bytes == null) ? new byte[0] : bytes;
     }
 
     @Override
@@ -78,7 +84,6 @@ public class DigestRecord implements DigestResult {
     }
 
     static final DigestRecord of(final DigestResult result) {
-        if (result == null) throw new NullPointerException("DigestResult is null");
         return new DigestRecord(result.getAlgorithm(), result.toHexString(), result.getMessageLength());
     }
 

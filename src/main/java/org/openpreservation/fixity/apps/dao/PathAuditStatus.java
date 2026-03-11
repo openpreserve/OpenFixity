@@ -1,5 +1,8 @@
 package org.openpreservation.fixity.apps.dao;
 
+import org.jspecify.annotations.NullMarked;
+
+@NullMarked
 public enum PathAuditStatus {
     DAMAGED("<i class=\"bi bi-file-earmark-x\"></i>"),
     DENIED("<i class=\"bi bi-file-earmark-lock2\"></i>"),

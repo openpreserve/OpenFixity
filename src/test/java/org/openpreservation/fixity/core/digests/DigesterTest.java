@@ -1,11 +1,12 @@
 /**
- * 
+ *
  */
 package org.openpreservation.fixity.core.digests;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,17 +14,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpreservation.fixity.Utils;
 
 /**
  * @author <a href="mailto:carl@openplanetsfoundation.org">Carl Wilson</a>
  *         <a href="https://github.com/carlwilson">carlwilson AT github</a>
  * @version 0.1
- * 
+ *
  *          Created 20 Jul 2012:03:29:11
  */
 
@@ -32,24 +36,26 @@ public class DigesterTest {
     static final String testText = "The quick brown fox jumps over the lazy dog";
     Path testFile;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         emptyFile = Utils.createTempFileWithText("empty", "");
         testFile = Utils.createTempFileWithText("test", testText);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         Files.deleteIfExists(emptyFile);
         Files.deleteIfExists(testFile);
     }
 
+    @SuppressWarnings("null")
     @Test
     public void testSupportedAlgorithms() throws IOException, NoSuchAlgorithmException {
         Algorithms.AVAILABLE.forEach(alg -> {
             try {
-                DigestResult result = Hasher.instance(alg).hash("".getBytes(StandardCharsets.UTF_8));
-                assertEquals(DigestResult.NULL_DIGESTS.get(alg), result);
+                final @NonNull Set<@NonNull DigestResult> results = Hasher.instance(Collections.singleton(alg)).hash("".getBytes(StandardCharsets.UTF_8));
+                assertFalse(results.isEmpty());
+                assertEquals(DigestResult.NULL_DIGESTS.get(alg), results.iterator().next());
             } catch (NoSuchAlgorithmException | IOException e) {
                 throw new RuntimeException(e);
             }
@@ -58,30 +64,31 @@ public class DigesterTest {
 
     @Test
     public void testDefault() throws NoSuchAlgorithmException, IOException {
-        // Get the null streamId
         DigestResult test = DigestResult.DEFAULT_NULL_DIGEST;
         assertSame(DigestResult.DEFAULT_NULL_DIGEST, test);
     }
 
     @Test
     public void testEmptyFile() throws NoSuchAlgorithmException, IOException {
-        // Get the null streamId
         try (final FileInputStream fis = new FileInputStream(emptyFile.toFile())) {
-            final DigestResult result = Hasher.instance(Algorithms.DEFAULT).hash(fis);
-            assertEquals(DigestResult.DEFAULT_NULL_DIGEST, result);
-            assertNotSame(DigestResult.DEFAULT_NULL_DIGEST, result);
+            @SuppressWarnings("null")
+            final @NonNull Set<@NonNull DigestResult> results = Hasher.instance(Collections.singleton(Algorithms.DEFAULT)).hash(fis);
+            assertFalse(results.isEmpty());
+            assertEquals(DigestResult.DEFAULT_NULL_DIGEST, results.iterator().next());
+            assertNotSame(DigestResult.DEFAULT_NULL_DIGEST, results.iterator());
         }
     }
 
     @Test
     public void testTextFile() throws NoSuchAlgorithmException, IOException {
-        // Get the null streamId
-        final DigestResult expected = Hasher.instance(Algorithms.DEFAULT)
+        @SuppressWarnings("null")
+        final @NonNull Set<@NonNull DigestResult> expected = Hasher.instance(Collections.singleton(Algorithms.DEFAULT))
                 .hash(testText.getBytes(StandardCharsets.UTF_8));
         try (final FileInputStream fis = new FileInputStream(testFile.toFile())) {
-            final DigestResult result = Hasher.instance(Algorithms.DEFAULT).hash(fis);
-            assertEquals(expected, result);
-            assertNotSame(expected, result);
+            @SuppressWarnings("null")
+            final @NonNull Set<@NonNull DigestResult> results = Hasher.instance(Collections.singleton(Algorithms.DEFAULT)).hash(fis);
+            assertEquals(expected, results);
+            assertNotSame(expected, results);
         }
     }
 }

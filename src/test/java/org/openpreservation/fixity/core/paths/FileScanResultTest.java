@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpreservation.fixity.Utils;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -14,12 +14,12 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class FileScanResultTest {
     Path testPath;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException, NoSuchAlgorithmException {
         testPath = Utils.createTempTestPath("fixity-fileresult-tests");
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         Utils.deleteDirectory(testPath.toFile());
     }

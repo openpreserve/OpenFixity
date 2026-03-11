@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.jspecify.annotations.NonNull;
@@ -17,19 +16,20 @@ import org.openpreservation.fixity.apps.dao.PathRegistration;
 import org.openpreservation.fixity.apps.schedule.ScanJobDetails;
 import org.openpreservation.fixity.apps.schedule.ScheduleManager;
 import org.openpreservation.fixity.apps.server.exceptions.OpenFixityException;
+import org.openpreservation.fixity.core.digests.Algorithms;
 import org.quartz.JobDetail;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.dropwizard.hibernate.UnitOfWork;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 
@@ -54,8 +54,7 @@ public class CollectionsResource {
     @GET
     @Produces("application/json")
     public List<Collection> getCollections() {
-        List<Collection> collections = dataFactory.collectionDAO().findAll();
-        return collections;
+        return dataFactory.collectionDAO().findAll();
     }
 
     /**
@@ -69,13 +68,19 @@ public class CollectionsResource {
     @GET
     @Produces("application/json")
     @jakarta.ws.rs.Path("/{name}/")
+    @NonNull
     public Collection getCollection(@PathParam("name") final String name) throws OpenFixityException {
-        return dataFactory
-                .collectionDAO()
-                .findByName(name)
-                .orElseThrow(() -> OpenFixityException
-                        .of(new NotFoundException("Collection with name " + name + " not found."),
-                        "collections/name/" + name));
+        if (name == null || name.isBlank()) {
+            throw OpenFixityException.of(new BadRequestException("Collection name cannot be null or blank."), "Collection.name: " + name);
+        }
+        try {
+             return dataFactory.collectionDAO().findByName(name);
+        } catch (NoResultException e) {
+            logger.warn(String.format("/collections/name/{} Error retrieving collection with name %s", name, name), e);
+            throw OpenFixityException 
+                    .of(new NotFoundException("Collection with name " + name + " not found."),
+                    "collections/name/" + name);
+        }
     }
 
     /**
@@ -90,27 +95,9 @@ public class CollectionsResource {
     @Produces("application/json")
     @jakarta.ws.rs.Path("/{name}/")
     public Collection createCollection(@PathParam("name") final String name) {
-        try {
-            return dataFactory.collectionDAO().create(name);
-        } catch (SQLIntegrityConstraintViolationException e) {
-            final String message = "Collection with name " + name + " already exists.";
-            logger.error(String.format("/collections/name/{} {}", name, message), e);
-            throw OpenFixityException.of(new BadRequestException(message, e), "/collections/name/" + name);
+        if (name == null || name.isBlank()) {
+            throw OpenFixityException.of(new BadRequestException("Collection name cannot be null or blank."), "Collection.name: " + name);
         }
-    }
-
-    /**
-     * Update a Collection with the given name, or return a 400 Bad Request if a Collection with the given name already exists.
-     *
-     * @param name the name of the Collection to create.
-     * @return the newly created Collection.
-     * @throws OpenFixityException if a Collection with the given name already exists, or if there is an error accessing the database.
-     */
-    @UnitOfWork
-    @PUT
-    @Produces("application/json")
-    @jakarta.ws.rs.Path("/{name}/")
-    public Collection updateCollection(@PathParam("name") final String name) {
         try {
             return dataFactory.collectionDAO().create(name);
         } catch (SQLIntegrityConstraintViolationException e) {
@@ -144,16 +131,13 @@ public class CollectionsResource {
     @jakarta.ws.rs.Path("/{name}/folder/{folderId}/")
     public Collection registerFolder(@PathParam("name") final String name, @PathParam("folderId") final Integer folderId) {
         Collection collection = getCollection(name);
-        Path toRegister = FoldersResource.getPathById(folderId);
-        if (toRegister == null) throw new NotFoundException("Folder with ID " + folderId + " not found.");
+        Path toRegister = FolderInfoResource.getPathById(folderId);
         if (!Files.exists(toRegister) || !Files.isDirectory(toRegister) || !Files.isReadable(toRegister)) {
-            throw new BadRequestException(String.format("Path %s to register must be an existing, readable directory.", toRegister.toString()));
+            throw OpenFixityException.of(new BadRequestException(String.format("Path %s to register must be an existing, readable directory.", toRegister.toString())));
         }
         try {
             checkPathRegistrationNotExists(collection.getPathRegistrations(), toRegister);
-            Optional<CollectionPath> collectionPathOpt = dataFactory.collectionPathDAO().findByRoot(toRegister);
-            CollectionPath collectionPath = (collectionPathOpt.isEmpty()) ? 
-                    dataFactory.collectionPathDAO().create(CollectionPath.of(toRegister)) : collectionPathOpt.get();
+            CollectionPath collectionPath = dataFactory.collectionPathDAO().getOrCreate(CollectionPath.of(toRegister));
             dataFactory.pathRegistrationDAO().register(collection, collectionPath);
         } catch (SQLIntegrityConstraintViolationException e) {
             throw OpenFixityException.
@@ -162,7 +146,7 @@ public class CollectionsResource {
         } catch (IOException e) {
             throw OpenFixityException.
                     of(new InternalServerErrorException("Failed to register path.", e),
-                            "/collections/name/" + name + "/folder/" + folderId);
+                            "Collection.name: " + name + ", folderId: " + folderId);
         }
         return collection;
     }
@@ -172,15 +156,18 @@ public class CollectionsResource {
     @Produces("application/json")
     @jakarta.ws.rs.Path("/{name}/paths/{folderId}/")
     public PathRegistration deregisterFolder(@PathParam("name") final String name, @PathParam("folderId") final Long folderId) {
-        Collection collection = getCollection(name);
-        CollectionPath collectionPath = dataFactory
-                .collectionPathDAO()
-                .findById(folderId)
-                .orElseThrow(() -> 
-                    OpenFixityException
-                        .of(new NotFoundException("CollectionPath with ID " + folderId + " not found.")));
+        if (folderId == null) {
+            throw OpenFixityException.of(new BadRequestException("Folder ID cannot be null."), "folderId: " + folderId);
+        }
+        @NonNull Collection collection = getCollection(name);
         try {
+            CollectionPath collectionPath = dataFactory
+                    .collectionPathDAO()
+                    .findById(folderId);
             return dataFactory.pathRegistrationDAO().deregister(collection, collectionPath);
+        } catch (NoResultException e) {
+            throw OpenFixityException
+                    .of(new NotFoundException("CollectionPath with ID " + folderId + " not found."), "CollectionPath.id: " + folderId);
         } catch (SQLIntegrityConstraintViolationException e) {
             throw OpenFixityException.
                     of(new BadRequestException("No Path registered for that collections.",e),
@@ -205,15 +192,20 @@ public class CollectionsResource {
     @Produces("application/json")
     @jakarta.ws.rs.Path("/{name}/paths/{pathId}/scan")
     public JobDetail scanPath(@PathParam("name") final String name, @PathParam("pathId") final Long pathId) {
-        CollectionPath collectionPath = dataFactory.collectionPathDAO().findById(pathId).orElseThrow(() -> new NotFoundException("CollectionPath with ID " + pathId + " not found."));
-        Collection collection = dataFactory.collectionDAO().findByName(name).orElseThrow(() -> new NotFoundException("Collection with name " + name + " not found."));
-        ScanJobDetails jobDetails = ScanJobDetails.of(collectionPath.getJobId(),
-                                                      collection.getJobId(),
-                                                      "",
-                                                      collectionPath.getFullPath(),
-                                                      "SHA-256");
+        if (pathId == null) {
+            throw OpenFixityException.of(new BadRequestException("Path ID cannot be null."), "pathId: " + pathId);
+        }
+        Collection collection = getCollection(name);
         try {
+            CollectionPath collectionPath = dataFactory.collectionPathDAO().findById(pathId);
+            ScanJobDetails jobDetails = ScanJobDetails.of(collectionPath.getJobId(),
+                                                        collection.getJobId(),
+                                                        "",
+                                                        collectionPath.getFullPath(),
+                                                        Algorithms.DEFAULT.getName());
             return ScheduleManager.scheduleScan(jobDetails);
+        } catch (NoResultException e) {
+            throw OpenFixityException.of(new NotFoundException("CollectionPath with id " + pathId + " not found.", e), "CollectionPath.id: " + pathId);
         } catch (SchedulerException e) {
             throw OpenFixityException.of(new BadRequestException("Scheduling exception for collection " + name + ", path" + pathId, e));
         }

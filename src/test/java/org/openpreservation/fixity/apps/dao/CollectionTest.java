@@ -1,7 +1,7 @@
 package org.openpreservation.fixity.apps.dao;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,27 +9,40 @@ import java.nio.file.Path;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Random;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpreservation.fixity.Utils;
 
+import jakarta.persistence.NoResultException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
+@SuppressWarnings("null")
 public class CollectionTest {
     static Path testPath;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws IOException {
         testPath = Files.createTempDirectory("fixity-coll-path");
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws IOException {
         Utils.deleteDirectory(testPath.toFile());
     }
 
-    @SuppressWarnings("null")
+    @BeforeEach
+    public void beginTx() {
+        TestSessionFactory.beginTransaction();
+    }
+
+    @AfterEach
+    public void rollback() {
+        TestSessionFactory.rollback();
+    }
+
     @Test
     public void testEquals() {
         EqualsVerifier.forClass(Collection.class).withIgnoredFields("pathRegistrations")
@@ -43,43 +56,69 @@ public class CollectionTest {
 
     @Test
     public void testAddCollection() throws SQLIntegrityConstraintViolationException {
-        Collection collection = DataManager.collectionDao().findByName("A simple collection").orElse(null);
-        if (collection != null) {
-            DataManager.collectionDao().update(collection);
-            DataManager.collectionDao().delete(collection);
+        CollectionDAO dao = TestSessionFactory.dataFactory().collectionDAO();
+        try {
+            dao.delete(dao.findByName("A simple collection").getId());
+        } catch (NoResultException e) {
+            // No existing collection, so we can proceed with the test
         }
-        collection = Collection.of("A simple collection");
-        Collection createdCollection = DataManager.collectionDao().create(collection);
-        assertEquals(collection, createdCollection);
+        Collection created = dao.create("A simple collection");
+        assertEquals("A simple collection", created.getName());
     }
 
-    @Test(expected = SQLIntegrityConstraintViolationException.class)
-    public void testAddDuplicateCollection() throws SQLIntegrityConstraintViolationException {
-        CollectionDao dao = DataManager.collectionDao();
-        dao.create(Collection.of("Test Collection"));
-        dao.create(Collection.of("Test Collection"));
+    @Test
+    public void testAddDuplicateCollection() {
+        assertThrows(SQLIntegrityConstraintViolationException.class, () -> {
+            CollectionDAO dao = TestSessionFactory.dataFactory().collectionDAO();
+            dao.create("Test Collection");
+            dao.create("Test Collection");
+        });
     }
 
-    @Test(expected = SQLIntegrityConstraintViolationException.class)
-    public void testUpdateNewCollections() throws SQLIntegrityConstraintViolationException {
-        CollectionDao dao = DataManager.collectionDao();
-        dao.update(Collection.of("Test Collection"));
+    @Test
+    public void testUpdateNewCollections() {
+        assertThrows(SQLIntegrityConstraintViolationException.class, () -> {
+            CollectionDAO dao = TestSessionFactory.dataFactory().collectionDAO();
+            dao.update(Collection.of("Test Collection"));
+        });
+    }
+
+    @Test
+    public void testDeleteCollectionByObject() throws SQLIntegrityConstraintViolationException {
+        CollectionDAO dao = TestSessionFactory.dataFactory().collectionDAO();
+        Collection toDelete = dao.create("DeleteByObjectTest");
+        int initialSize = dao.findAll().size();
+        dao.delete(toDelete);
+        assertEquals(initialSize - 1, dao.findAll().size());
+    }
+
+    @Test
+    public void testDeleteCollectionByObjectWithRegistrations() throws SQLIntegrityConstraintViolationException, IOException {
+        CollectionDAO collectionDAO = TestSessionFactory.dataFactory().collectionDAO();
+        CollectionPathDAO collectionPathDAO = TestSessionFactory.dataFactory().collectionPathDAO();
+        PathRegistrationDAO pathRegistrationDAO = TestSessionFactory.dataFactory().pathRegistrationDAO();
+        Collection toDelete = collectionDAO.create("DeleteByObjectWithRegsTest");
+        CollectionPath cp = collectionPathDAO.create(CollectionPath.of(testPath));
+        pathRegistrationDAO.register(toDelete, cp);
+        int initialSize = collectionDAO.findAll().size();
+        collectionDAO.delete(toDelete);
+        assertEquals(initialSize - 1, collectionDAO.findAll().size());
     }
 
     @Test
     public void testDeleteCollections() throws SQLIntegrityConstraintViolationException, IOException {
-        CollectionDao dao = DataManager.collectionDao();
-        @SuppressWarnings("null")
+        CollectionDAO collectionDAO = TestSessionFactory.dataFactory().collectionDAO();
+        CollectionPathDAO collectionPathDAO = TestSessionFactory.dataFactory().collectionPathDAO();
+        PathRegistrationDAO pathRegistrationDAO = TestSessionFactory.dataFactory().pathRegistrationDAO();
         String name = new Random().ints(97, 123)
             .limit(40)
             .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
             .toString();
-        dao.create(Collection.of(name));
-        Collection toDelete = dao.findByName(name).orElseThrow();;
-        dao.registerCollectionPath(toDelete, testPath);
-        assertTrue(toDelete.getPathRegistrationsSize() == 1);
-        int initialSize = dao.findAll().size();
-        dao.delete(dao.findByName(name).orElseThrow());
-        assertEquals(initialSize - 1, dao.findAll().size());
+        Collection toDelete = collectionDAO.create(name);
+        CollectionPath cp = collectionPathDAO.create(CollectionPath.of(testPath));
+        pathRegistrationDAO.register(toDelete, cp);
+        int initialSize = collectionDAO.findAll().size();
+        collectionDAO.delete(toDelete.getId());
+        assertEquals(initialSize - 1, collectionDAO.findAll().size());
     }
 }

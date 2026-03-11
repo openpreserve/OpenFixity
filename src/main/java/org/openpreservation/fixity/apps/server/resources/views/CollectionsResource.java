@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.dropwizard.hibernate.UnitOfWork;
+import jakarta.persistence.NoResultException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
@@ -37,18 +38,24 @@ public class CollectionsResource {
     @GET
     @Path("/{name}/")
     public CollectionView getCollection(@PathParam("name") final String name) {
+        if (name == null) {
+            throw OpenFixityException.of(new BadRequestException("Collection name cannot be null."), "/collections/name/" + name);
+        }
         logger.debug("Getting collection {}", name);
-        return new CollectionView(dataFactory.collectionDAO().
-                findByName(name).
-                orElseThrow(() -> OpenFixityException
-                        .of(new NotFoundException("Collection with name " + name + " not found."),
-                                                  "/collections/name/" + name)));
+        try {
+            return new CollectionView(dataFactory.collectionDAO().findByName(name));
+        } catch (NoResultException e) {
+            throw OpenFixityException.of(new NotFoundException("Collection with name " + name + " not found.", e), "/collections/name/" + name);
+        }
     }
 
     @UnitOfWork
     @POST
     @Path("/{name}/")
     public CollectionView createCollection(@PathParam("name") final String name) {
+        if (name == null || name.isBlank()) {
+            throw OpenFixityException.of(new BadRequestException("Collection name cannot be null or blank."), "/collections/name/" + name);
+        }
         logger.debug("Creating collection {}", name);
         try {
             return new CollectionView(dataFactory.collectionDAO().create(name));

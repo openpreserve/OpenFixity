@@ -1,31 +1,36 @@
 package org.openpreservation.fixity.core.paths;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpreservation.fixity.Utils;
 import org.openpreservation.fixity.core.digests.Algorithms;
 import org.openpreservation.fixity.core.digests.DigestResult;
 import org.openpreservation.fixity.core.digests.Hasher;
 
 public class PathScannerTest {
+    @SuppressWarnings("null")
+    @NonNull
     Path testPath;
     PathScanner scanner;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException, NoSuchAlgorithmException {
         testPath = Utils.createTempTestPath("fixity-pathsummary-tests");
         scanner = PathScanner.instance();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         Utils.deleteDirectory(testPath.toFile());
     }
@@ -73,33 +78,37 @@ public class PathScannerTest {
 
     @Test
     public void testScanPath() throws IOException, NoSuchAlgorithmException {
-        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Algorithms.SHA_256), false);
+        @SuppressWarnings("null")
+        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Collections.singleton(Algorithms.SHA_256)), false);
         assertEquals(PathSummary.of(this.testPath, 2, 18, 1, 0), result.getSummary());
     }
 
+    @SuppressWarnings("null")
     @Test
     public void testScanPathRecursive() throws IOException, NoSuchAlgorithmException {
-        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Algorithms.SHA_256), true);
+        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Collections.singleton(Algorithms.SHA_256)), true);
         assertEquals(PathSummary.of(this.testPath, 3, 27, 1, 1), result.getSummary());
         Utils.addNestedDir(this.testPath);
-        result = scanner.scan(this.testPath, Hasher.instance(Algorithms.SHA_256), true);
+        result = scanner.scan(this.testPath, Hasher.instance(Collections.singleton(Algorithms.SHA_256)), true);
         assertEquals(PathSummary.of(this.testPath, 4, 36, 1, 1), result.getSummary());
     }
 
     @Test
     public void testScanHashRecursive() throws IOException, NoSuchAlgorithmException {
         Utils.addNestedDir(this.testPath);
-        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Algorithms.SHA_256), true);
-        Hasher hasher = Hasher.instance(Algorithms.SHA_256);
+        @SuppressWarnings("null")
+        PathScanResult result = scanner.scan(this.testPath, Hasher.instance(Collections.singleton(Algorithms.SHA_256)), true);
+        @SuppressWarnings("null")
+        Hasher hasher = Hasher.instance(Collections.singleton(Algorithms.SHA_256));
         for (FileScanResult fsr : result.getResults()) {
-            if (fsr == null) continue;
             Path filePath = fsr.getPath();
             final String fileName = filePath.getFileName().toString();
-            DigestResult expected = hasher.hash(fileName.getBytes(StandardCharsets.UTF_8));
+            @SuppressWarnings("null")
+            Set<DigestResult> expected = hasher.hash(fileName.getBytes(StandardCharsets.UTF_8));
             if (fsr.getStatus() != FileScanStatus.SCANNED) {
                 continue;
             }
-            assertEquals(expected, fsr.getDigestResults().iterator().next());
+            assertEquals(expected, fsr.getDigestResults());
         }
         assertEquals(PathSummary.of(this.testPath, 4, 36, 1, 1), result.getSummary());
     }

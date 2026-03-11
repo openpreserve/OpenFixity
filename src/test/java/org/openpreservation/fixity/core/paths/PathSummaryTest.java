@@ -1,14 +1,14 @@
 package org.openpreservation.fixity.core.paths;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpreservation.fixity.Utils;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -16,12 +16,12 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class PathSummaryTest {
     Path testPath;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException, NoSuchAlgorithmException {
         testPath = Utils.createTempTestPath("fixity-pathsummary-tests");
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException {
         Utils.deleteDirectory(testPath.toFile());
     }
@@ -31,6 +31,7 @@ public class PathSummaryTest {
         EqualsVerifier.forClass(PathSummary.PathSummaryImpl.class).verify();
     }
 
+    @SuppressWarnings("null")
     @Test
     public void testOfLongPath() throws IOException {
         PathSummary summary = PathSummary.of(this.testPath, true);

@@ -5,6 +5,11 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+@NullMarked
 public interface PathSummary {
     /**
      * Get the root path for this summary.
@@ -40,14 +45,6 @@ public interface PathSummary {
         private final long totalUnreadableDirectories;
         private final long totalUnreadableFiles;
 
-        private PathSummaryImpl() {
-            this.path = null;
-            this.totalFiles = 0L;
-            this.totalBytes = 0L;
-            this.totalUnreadableDirectories = 0L;
-            this.totalUnreadableFiles = 0L;
-        }
-
         private PathSummaryImpl(final Path path, final long totalFiles, final long totalBytes, final long totalUnreadableDirectories, final long totalUnreadableFiles) {
             this.path = path;
             this.totalFiles = totalFiles;
@@ -57,6 +54,7 @@ public interface PathSummary {
         }
 
         @Override
+        @NonNull
         public final Path getPath() {
             return this.path;
         }
@@ -87,7 +85,7 @@ public interface PathSummary {
         }
 
         @Override
-        public final boolean equals(final Object obj) {
+        public final boolean equals(final @Nullable Object obj) {
             if (this == obj)
                 return true;
             if (!(obj instanceof PathSummaryImpl))
@@ -98,6 +96,7 @@ public interface PathSummary {
         }
 
         @Override
+        @Nullable
         public final String toString() {
             final StringBuilder builder = new StringBuilder();
             builder.append("PathSummaryImpl [");
@@ -107,10 +106,12 @@ public interface PathSummary {
             return builder.toString();
         }
 
+        
         static final PathSummary of(final Path path, final boolean recursive) throws FileNotFoundException {
-            if (path == null) throw new NullPointerException("Path cannot be null");
             if (!path.toFile().exists()) throw new FileNotFoundException("Path does not exist: " + path.toString());
             if (!path.toFile().isDirectory()) return new PathSummaryImpl(path, 1L, path.toFile().length(), 0L, path.toFile().canRead() ? 0L : 1L);
+            if (!path.toFile().canRead()) return new PathSummaryImpl(path, 0L, 0L, 1L, 0L);
+            @SuppressWarnings("null")
             final long[] counts = countFiles(path.toFile(), recursive);
             return new PathSummaryImpl(path, counts[0], counts[1], counts[2], counts[3]);
         }
@@ -146,10 +147,14 @@ public interface PathSummary {
             return new long[] { totalFiles, totalBytes, totalUnreadableDirectories, totalUnreadableFiles };
         }
     }
-    static final PathSummary EMPTY = new PathSummaryImpl();
 
+    
     public static PathSummary of(final Path path, final boolean recursive) throws FileNotFoundException {
         return PathSummaryImpl.of(path, recursive);
+    }
+
+    public static PathSummary of(final Path path) {
+        return new PathSummaryImpl(path, 0L, 0L, 0L, 0L);
     }
 
     public static PathSummary of(final Path path, final long totalFiles, final long totalBytes, final long totalUnreadableDirectories, final long totalUnreadableFiles) {

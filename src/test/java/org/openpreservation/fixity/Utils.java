@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.jspecify.annotations.NonNull;
+
 public class Utils {
     
     public static final boolean deleteDirectory(final File directory) {
@@ -29,6 +31,7 @@ public class Utils {
         return ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("-Xrunjdwp");
     }
 
+    @NonNull
     public static Path createTempTestPath(final String prefix) throws IOException {
         Path testPath = Files.createTempDirectory(prefix);
         Path file = Files.createFile(testPath.resolve("file1.txt"));
@@ -46,9 +49,13 @@ public class Utils {
         return testPath;
     }
 
+    @NonNull
     public static Path createTempFileWithText(final String prefix, final String content) throws IOException {
         Path tempFile = Files.createTempFile(prefix, ".txt");
         Files.write(tempFile, content.getBytes(StandardCharsets.UTF_8));
+        if (tempFile == null || !tempFile.toFile().exists()) {
+            throw new IOException("Failed to create temporary file: " + tempFile);
+        }
         return tempFile;
     }
 

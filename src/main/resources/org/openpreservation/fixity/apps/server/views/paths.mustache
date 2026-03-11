@@ -31,16 +31,8 @@
         }
       });
     });
-    function scanPath(pathId) {
-      $('#algorithmsModal .btn-primary').off('click').on('click', function() {
-        const algorithm = $('#algorithmsRadioGroup input[name="algorithmsRadio"]:checked').val();
-        console.log(`Scanning path ${pathId} with algorithm ${algorithm}`);
-        $('#algorithmsModal').modal('hide');
-        $.post(`/api/paths/${pathId}/scan/${algorithm}`, function() {
-          location.reload();
-        });
-      });
-    }
   </script>
+  <script src="/js/modals.js"></script>
+  <script src="/js/scan.js"></script>
 </body>
 </html>

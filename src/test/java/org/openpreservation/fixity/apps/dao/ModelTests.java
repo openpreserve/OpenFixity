@@ -1,11 +1,10 @@
 package org.openpreservation.fixity.apps.dao;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.Suite.SuiteClasses;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
-@RunWith(Suite.class)
-@SuiteClasses({ MockScannerTest.class, CollectionTest.class, PathRegistrationTest.class, CollectionPathTest.class, PathScanTest.class })
+@Suite
+@SelectClasses({ MockScannerTest.class, CollectionTest.class, PathRegistrationTest.class, CollectionPathTest.class, PathScanTest.class })
 public class ModelTests {
 
 }
