@@ -27,6 +27,7 @@ import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -53,6 +54,9 @@ public class FolderScanRecord implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private @Nullable Long id;
 
+    // Not serialized: a PathScan serializes its folders, and without this each folder would
+    // serialize its pathScan straight back, an infinite cycle that crashes JSON output.
+    @JsonIgnore
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "path_scan_id", nullable = false)
     private PathScan pathScan;

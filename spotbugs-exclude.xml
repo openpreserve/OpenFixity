@@ -62,6 +62,17 @@
     </Match>
 
     <!--
+      AppInfo is a JSON DTO. Its constant fields (appName, dropwizardVersion) are read by
+      Jackson via reflection at serialization time, which SpotBugs cannot see, so it reports
+      them as unread and suggests making them static. They cannot be static: static fields are
+      not serialized to JSON, which is the entire purpose of the class.
+    -->
+    <Match>
+        <Class name="org.openpreservation.fixity.apps.server.resources.api.AppInfoResource$AppInfo" />
+        <Bug pattern="SS_SHOULD_BE_STATIC" />
+    </Match>
+
+    <!--
       KNOWN DESIGN DEBT, not a false positive. OpenFixityServer publishes application-wide
       state into static fields from run(), an instance method, because Quartz jobs execute
       outside Jersey's injection context and have no other route to the Hibernate bundle.

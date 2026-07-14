@@ -153,6 +153,9 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
         environment.jersey().register(org.openpreservation.fixity.apps.server.resources.views.FoldersResource.class);
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.views.PathsResource(dataFactory));
         environment.jersey().register(new PathScansResource(dataFactory));
+        // JSON scan API and app info, both required by the React frontend.
+        environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.ScansResource(dataFactory));
+        environment.jersey().register(org.openpreservation.fixity.apps.server.resources.api.AppInfoResource.class);
         environment.jersey().register(new JobsResource());
         environment.jersey().register(new SchedulerResource());
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.ScanResultsResource(dataFactory));

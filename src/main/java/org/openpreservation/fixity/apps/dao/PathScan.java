@@ -35,7 +35,6 @@ import org.openpreservation.fixity.core.paths.FileScanResult;
 import org.openpreservation.fixity.core.paths.FileScanStatus;
 import org.openpreservation.fixity.core.paths.PathScanResult;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -66,7 +65,8 @@ public class PathScan implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private @Nullable Long id;
-    @JsonBackReference
+    // Serialized, so a scan carries the path it belongs to (the scans list needs this). It
+    // does not cycle: CollectionPath.pathScans is @JsonIgnore, so the graph stops there.
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "collection_path_id")
     private CollectionPath collectionPath;

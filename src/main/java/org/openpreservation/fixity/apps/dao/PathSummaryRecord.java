@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -55,6 +57,9 @@ public class PathSummaryRecord implements PathSummary, Serializable {
     private long damagedCount;
     @Column(columnDefinition = "BIGINT DEFAULT 0 NOT NULL")
     private long deniedCount;
+    // Not serialized: a PathScan serializes its summary, and without this the summary would
+    // serialize its pathScan straight back, an infinite cycle that crashes JSON output.
+    @JsonIgnore
     @OneToOne(mappedBy = "summary")
     private @Nullable PathScan pathScan;
 
