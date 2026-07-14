@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+* OpenFixity SpotBugs exclusions.
+* Copyright (C) 2026 Open Preservation Foundation
+*
+* Everything excluded here is a pattern SpotBugs cannot distinguish from a real defect,
+* but which is inherent to how JPA and Hibernate work. Nothing is excluded merely to make
+* the build pass. If a rule starts hiding real bugs, delete it rather than widening it.
+-->
+<FindBugsFilter>
+
+    <!--
+      JPA entities and DAOs necessarily hand out references to mutable objects: an entity's
+      associations ARE the object graph, and returning defensive copies would break dirty
+      checking and lazy loading. EI_EXPOSE_REP on this layer is noise by construction.
+    -->
+    <Match>
+        <Package name="org.openpreservation.fixity.apps.dao" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="org.openpreservation.fixity.apps.schedule.BatchScanner" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Class name="org.openpreservation.fixity.apps.schedule.ScanUpdater" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+    <!--
+      View classes are DTOs handed straight to Mustache, and the configuration holds
+      Dropwizard's own DataSourceFactory. Both exist to carry references outward, so the
+      same argument applies as for the entities above.
+    -->
+    <Match>
+        <Package name="org.openpreservation.fixity.apps.server.views" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+    <Match>
+        <Package name="org.openpreservation.fixity.apps.server.config" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+    <!--
+      Hibernate's query methods are not annotated for nullness, so SpotBugs cannot prove
+      their results are non-null and flags the guarding null checks as redundant. The checks
+      are cheap and correct; the warning is an artefact of missing annotations upstream.
+    -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE" />
+    </Match>
+
+    <!--
+      The REST resources reject a null id and name it in the error message:
+          if (id == null) throw ... ("Path.id: " + id)
+      SpotBugs sees a value it just proved null being loaded again. Concatenating null is
+      well defined and the message is the point, so this is a false positive.
+    -->
+    <Match>
+        <Package name="~org\.openpreservation\.fixity\.apps\.server\.resources.*" />
+        <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE" />
+    </Match>
+
+    <!--
+      KNOWN DESIGN DEBT, not a false positive. OpenFixityServer publishes application-wide
+      state into static fields from run(), an instance method, because Quartz jobs execute
+      outside Jersey's injection context and have no other route to the Hibernate bundle.
+      It is safe only because exactly one Application instance exists per JVM. If OpenFixity
+      ever needs to run more than one instance in a process, this breaks, and these
+      exclusions should be removed rather than widened.
+    -->
+    <Match>
+        <Class name="org.openpreservation.fixity.apps.server.OpenFixityServer" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD,MS_EXPOSE_REP" />
+    </Match>
+
+    <!--
+      Finalizer attacks require a finalizable class; finalization has been deprecated since
+      Java 9 and none of these types override finalize().
+    -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <!--
+      Folder and PathScanResult are the scan's object graph. Their getters return the child
+      folders and file results by reference because traversal is the whole point; copying the
+      tree on every access would be pointless and slow.
+
+      Note this deliberately does NOT cover the byte[] accessors in core.digests. Digest bytes
+      are values, not graph nodes, and they are defensively copied.
+    -->
+    <Match>
+        <Class name="~org\.openpreservation\.fixity\.core\.paths\.(Folder|PathScanResult).*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
+
+</FindBugsFilter>

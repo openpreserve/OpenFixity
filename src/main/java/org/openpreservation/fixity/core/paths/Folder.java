@@ -68,7 +68,10 @@ public interface Folder {
 
         @Override
         public void addFileScanResult(final FileScanResult fileScanResult) {
-            if (!fileScanResult.getPath().getParent().toString().equals(relativePath.toString())) {
+            // getParent() is null for a path with no parent component. Such a path cannot be a
+            // child of this folder, so reject it rather than dereferencing null.
+            final Path parentPath = fileScanResult.getPath().getParent();
+            if (parentPath == null || !parentPath.toString().equals(relativePath.toString())) {
                 throw new IllegalArgumentException("FileScanResult path must be a child of the folder's relative path");
             }
             this.fileScanResults.add(fileScanResult);

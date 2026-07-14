@@ -45,10 +45,14 @@ public class FolderInfoResource {
         
 
         FolderInfo(final Path path) {
+            // getParent() and getFileName() both return null for a filesystem root, so hold each
+            // in a local rather than calling twice and dereferencing the second result.
+            final Path parent = path.getParent();
+            final Path fileName = path.getFileName();
             this.id = hashPath(path);
-            this.hasParent = path.getParent() != null;
-            this.parentId = (this.hasParent) ? hashPath(path.getParent()) : 0;
-            this.name = (path.getFileName() != null) ? path.getFileName().toString() : path.toString();
+            this.hasParent = parent != null;
+            this.parentId = (parent != null) ? hashPath(parent) : 0;
+            this.name = (fileName != null) ? fileName.toString() : path.toString();
             this.isReadable = Files.isReadable(path);
             this.isHidden = isHidden(path);
         }

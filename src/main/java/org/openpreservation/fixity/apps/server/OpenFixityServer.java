@@ -50,8 +50,10 @@ import jakarta.ws.rs.core.MediaType;
 public class OpenFixityServer extends Application<OpenFixityConfiguration> {
     private static final String NAME = "open-fixity-rest"; //$NON-NLS-1$
     private static OpenFixityConfiguration configuration;
-    public static DataFactory dataFactory;
-    public static OpenFixityServer application;
+    // Published so Quartz jobs, which run outside Jersey's injection context, can reach the
+    // Hibernate bundle via getHibernate(). Nothing outside this class reads them directly.
+    private static DataFactory dataFactory;
+    private static OpenFixityServer application;
     private final HibernateBundle<OpenFixityConfiguration> hibernate =
         new HibernateBundle<OpenFixityConfiguration>(Collection.class,
                                                      CollectionPath.class,

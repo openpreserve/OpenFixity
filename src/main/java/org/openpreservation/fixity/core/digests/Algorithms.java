@@ -104,7 +104,9 @@ public enum Algorithms {
     @JsonValue
     public String getName() { return this.name; }
     public String getNullHex() { return formatHex(nullBytes); }
-    public byte[] getNullBytes() { return this.nullBytes; }
+    // Enum constants are JVM-wide singletons, so handing out the live array would let any
+    // caller permanently corrupt this algorithm's reference digest. Copy on the way out.
+    public byte[] getNullBytes() { return this.nullBytes.clone(); }
     public int getLength() { return this.nullBytes.length; }
     @SuppressWarnings("null")
     public MessageDigest getMessageDigest() throws NoSuchAlgorithmException { return MessageDigest.getInstance(this.name); }

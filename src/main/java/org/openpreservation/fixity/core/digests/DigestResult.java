@@ -60,7 +60,9 @@ public interface DigestResult extends Serializable {
                 final byte @NonNull [] digestBytes,
                 final long messageLength) {
             this.algorithm = algorithm;
-            this.digestBytes = digestBytes;
+            // Copy on the way in. A digest is a value; if it stayed a shared reference the
+            // caller could mutate a recorded checksum after the fact.
+            this.digestBytes = digestBytes.clone();
             this.messageLength = messageLength;
         }
 
@@ -76,7 +78,8 @@ public interface DigestResult extends Serializable {
 
         @Override
         public byte @NonNull [] getDigestBytes() {
-            return this.digestBytes;
+            // Copy on the way out, for the same reason.
+            return this.digestBytes.clone();
         }
 
         @Override
