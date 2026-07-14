@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.openpreservation.fixity</groupId>
     <artifactId>open-fixity</artifactId>
-    <version>1.0.0-ALPHA</version>
+    <version>0.1.0-ALPHA</version>
 
     <name>OpenFixity</name>
     <description>An application for monitoring and reporting on the fixity of files.</description>
@@ -48,6 +48,11 @@
         <mvn.reportsinfo.version>3.0.0</mvn.reportsinfo.version>
         <dropwizard.version>5.0.1</dropwizard.version>
         <spotbugs.version>4.8.6.6</spotbugs.version>
+        <frontend.plugin.version>1.15.1</frontend.plugin.version>
+        <!-- Node is downloaded and used only for the build; it is not a runtime dependency. -->
+        <frontend.node.version>v22.12.0</frontend.node.version>
+        <!-- Set -DskipFrontend=true to build the backend alone, without Node. -->
+        <skipFrontend>false</skipFrontend>
     </properties>
     <dependencies>
         <dependency>
@@ -144,6 +149,75 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <!--
+              Builds the React frontend and embeds it in the jar, so `mvn verify` produces a
+              single artifact that serves both the API and the GUI, and CI builds the GUI too.
+              Previously this was a hand-run shell script that copied Vite's output into src/,
+              which meant `mvn package` alone produced a jar with no GUI in it.
+
+              Node is downloaded into target/ (not the source tree) and used only at build
+              time. Pass -DskipFrontend=true to build the backend without Node installed.
+            -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>${frontend.plugin.version}</version>
+                <configuration>
+                    <workingDirectory>frontend</workingDirectory>
+                    <installDirectory>${project.build.directory}</installDirectory>
+                    <skip>${skipFrontend}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <configuration>
+                            <nodeVersion>${frontend.node.version}</nodeVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-ci</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+              Copies Vite's output onto the classpath where ReactAppResource looks for it.
+              This writes into target/classes, never into src/.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-react-app</id>
+                        <phase>process-resources</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <skip>${skipFrontend}</skip>
+                            <outputDirectory>${project.build.outputDirectory}/org/openpreservation/fixity/apps/server/webapp</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>frontend/dist</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

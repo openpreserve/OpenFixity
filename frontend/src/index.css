@@ -1,0 +1,124 @@
+/*
+ * Nunito, bundled locally via @fontsource rather than fetched from Google Fonts.
+ * Google Fonts transmits the visitor's IP to Google on every load, which breaks the
+ * offline/air-gapped use case and is a GDPR concern for the institutional users this tool
+ * serves. Weights match the previous Google Fonts request: 400, 600, 700, 800.
+ */
+@import '@fontsource/nunito/400.css';
+@import '@fontsource/nunito/600.css';
+@import '@fontsource/nunito/700.css';
+@import '@fontsource/nunito/800.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--accent) / 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px hsl(var(--accent) / 0);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 0.8s ease-in-out 2;
+}
+
+/* ---- OpenFixity animated logo (radar-sweep "O" + wordmark) ---- */
+.logo {
+  --of-spinner-rgb: 8, 233, 0; /* brand green, fixed across themes */
+  --of-spinner-size: 2rem;
+  --of-spin-duration: 2s;
+  --of-track-width: 20px; /* track + arc share this, so they stay equal thickness */
+  --of-logo-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  line-height: 1;
+}
+.logo__mark {
+  width: var(--of-spinner-size);
+  height: var(--of-spinner-size);
+  display: block;
+  flex: none;
+}
+.svg__stop-color {
+  stop-color: rgb(var(--of-spinner-rgb));
+}
+.spinner__track {
+  stroke: hsl(var(--foreground)); /* matches the wordmark — black on light, white on dark */
+  stroke-width: var(--of-track-width);
+  transform-origin: center;
+}
+.spinner__arc {
+  stroke-width: var(--of-track-width);
+  transform-origin: center;
+  animation: of-spin var(--of-spin-duration) linear infinite;
+}
+@keyframes of-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.logo__text {
+  font-family: 'Nunito', sans-serif;
+  font-size: calc(var(--of-spinner-size) * 0.92);
+  font-weight: var(--of-logo-weight, 700);
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground)); /* wordmark follows theme */
+  margin-left: -0.1em; /* tucks text against the ring */
+  margin-bottom: -5px; /* baseline nudge — drops the wordmark to sit level with the ring */
+  font-variant-caps: small-caps;
+}
+.logo__o {
+  font-size: 0; /* invisible zero-width O so copy/select yields "OpenFixity" */
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner__arc { animation: none; }
+}
+
+@layer base {
+  :root {
+    /* Light theme defaults - will be overridden by theme system */
+    --background: 220 17% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --primary: 334 60% 45%;
+    --primary-foreground: 222 47% 11%;
+    --accent: 334 60% 45%;
+    --accent-foreground: 222 47% 11%;
+  }
+  
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 220 17% 97%;
+    --card: 215 28% 17%;
+    --primary: 196 78% 36%;
+    --primary-foreground: 220 17% 97%;
+    --accent: 196 78% 36%;
+    --accent-foreground: 220 17% 97%;
+  }
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}

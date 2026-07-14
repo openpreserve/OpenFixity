@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
 import org.openpreservation.fixity.core.paths.Folder;
 import org.openpreservation.fixity.core.paths.PathSummary;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -58,10 +58,17 @@ public final class CollectionPath implements Serializable {
     private final String root;
     @SuppressWarnings("null")
     private final LocalDate added = LocalDate.now();
-    @JsonManagedReference
+    // Both of these are @JsonIgnore rather than @JsonManagedReference. Two managed references
+    // in one class both default to the name "defaultReference", which collides, and every
+    // attempt to serialize a CollectionPath to JSON failed with "Unable to process JSON"
+    // (the cause behind the /api/paths 400). These are also lazy, so serializing them risks a
+    // LazyInitializationException, and getLatestScan() throws when a path has no scans. The
+    // paths API does not need the scan graph; the scans API serves that. getRegisteredPaths()
+    // below stays exposed so the frontend can read registration timestamps.
+    @JsonIgnore
     @OneToMany(mappedBy = "collectionPath", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<@NonNull PathRegistration> pathRegistrations;
-    @JsonManagedReference
+    @JsonIgnore
     @OneToMany(mappedBy = "collectionPath", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<@NonNull PathScan> pathScans;
 
@@ -125,22 +132,28 @@ public final class CollectionPath implements Serializable {
         return "path." + this.getName() +"." + this.getId();
     }
 
+    @JsonIgnore
     public Set<@NonNull PathRegistration> getPathRegistrations() {
         return Collections.unmodifiableSet(pathRegistrations);
     }
 
+    // The one graph accessor left serializable: the frontend reads registration timestamps
+    // from it. PathRegistration.collectionPath is @JsonBackReference, so it does not cycle back.
     public Set<@NonNull PathRegistration> getRegisteredPaths() {
         return pathRegistrations.stream().filter(PathRegistration::isRegistered).collect(Collectors.toSet());
     }
 
+    @JsonIgnore
     public Set<@NonNull PathRegistration> getDeRegisteredPaths() {
         return pathRegistrations.stream().filter(PathRegistration::isDeRegistered).collect(Collectors.toSet());
     }
 
+    @JsonIgnore
     public Set<@NonNull PathScan> getPathScans() {
         return new HashSet<>(pathScans);
     }
 
+    @JsonIgnore
     public @NonNull PathScan getLatestScan() {
         return this.pathScans
                 .stream()

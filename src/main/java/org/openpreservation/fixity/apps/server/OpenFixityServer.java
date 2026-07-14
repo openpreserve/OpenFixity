@@ -142,6 +142,9 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
         environment.jersey().register(new OpenFixityExceptionMapper());
         environment.jersey().register(new WebApplicationExceptionMapper());
         environment.jersey().register(new IndexResource());
+        // Serves the React single page app from the jar at /app. The Mustache views remain
+        // the default UI at /; the two run side by side while the React app is brought up.
+        environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.views.ReactAppResource());
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.CollectionsResource(dataFactory));
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.PathsResource(dataFactory));
         environment.jersey().register(org.openpreservation.fixity.apps.server.resources.api.DigestsResource.class);

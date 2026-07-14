@@ -26,7 +26,7 @@ mvn clean package
 ## Running
 
 ```bash
-java -jar target/open-fixity-1.0.0-ALPHA.jar server dev-server.yml
+java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
 ```
 
 The web application is served at <http://localhost:8080>. Configuration lives in

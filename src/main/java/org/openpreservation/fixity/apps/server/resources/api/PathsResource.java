@@ -38,8 +38,11 @@ import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @jakarta.ws.rs.Path("/api/paths")
+@Produces(MediaType.APPLICATION_JSON)
 public class PathsResource {
     private final DataFactory dataFactory;
     public PathsResource(DataFactory dataFactory) {

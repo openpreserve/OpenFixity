@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <radialGradient id="of-fav-gradient" cx=".66" fx=".66" cy=".3125" fy=".3125" gradientTransform="translate(1 1) scale(-1.5)">
+    <stop offset="0" stop-color="rgb(8, 233, 0)"></stop>
+    <stop offset=".3" stop-color="rgb(8, 233, 0)" stop-opacity=".9"></stop>
+    <stop offset=".6" stop-color="rgb(8, 233, 0)" stop-opacity=".6"></stop>
+    <stop offset=".8" stop-color="rgb(8, 233, 0)" stop-opacity=".3"></stop>
+    <stop offset="1" stop-color="rgb(8, 233, 0)" stop-opacity="0"></stop>
+  </radialGradient>
+  <circle transform-origin="center" fill="none" opacity=".2" stroke="#7a7a7a" stroke-width="18" stroke-linecap="round" cx="100" cy="100" r="70"></circle>
+  <circle transform-origin="center" fill="none" stroke="url(#of-fav-gradient)" stroke-width="18" stroke-linecap="round" stroke-dasharray="197.9 439.8" stroke-dashoffset="0" cx="100" cy="100" r="70">
+    <animateTransform type="rotate" attributeName="transform" calcMode="spline" dur="2s" values="0;360" keyTimes="0;1" keySplines="0 0 1 1" repeatCount="indefinite"></animateTransform>
+  </circle>
+</svg>
