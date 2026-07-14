@@ -9,7 +9,12 @@ OpenFixity is a Dropwizard-based web application for monitoring digital file int
 ## Build & Run Commands
 
 ```bash
-# Build executable über-JAR
+# Build, test and run static analysis. Use this, not `package`.
+# SpotBugs is bound to the verify phase, and package runs BEFORE verify, so
+# `mvn clean package` silently skips the analysis.
+mvn clean verify
+
+# Build executable über-JAR only
 mvn clean package
 
 # Run the server (dev config)
@@ -62,7 +67,7 @@ CollectionPath
 
 **Database:** H2 (file-based at `~/.openfixity/open-fixity`), managed by Hibernate with `hbm2ddl.auto: update`.
 
-**Config file:** `dev-server.yml` — sets port 8080, H2 connection URL, log levels, and JDBC batch size. **Not committed to source control** — it contains local paths and developer-specific settings.
+**Config file:** `dev-server.yml` sets the application port (8080), the H2 connection URL, log levels, and JDBC batch size. It **is** committed, and is the config the README tells people to run with. It holds no secrets. Note it does not pin the admin connector, which therefore defaults to port 8081.
 
 ## Key Technology Versions
 
@@ -83,6 +88,42 @@ ScanUpdater updater = new UnitOfWorkAwareProxyFactory(OpenFixityServer.getHibern
 ```
 
 `@UnitOfWork` on the proxy's **public** methods then opens and commits a Hibernate session automatically. **`@UnitOfWork` on private methods is silently ignored** — CGLIB proxies cannot intercept private calls. Any private helper that appears to have its own unit of work is actually running in the caller's session.
+
+## Persisted Enums: Always `@Enumerated(EnumType.STRING)`
+
+**Every enum field on an entity must be annotated `@Enumerated(EnumType.STRING)`.** JPA
+defaults to `ORDINAL`, which stores the constant's *position*, so reordering or inserting a
+constant silently rewrites the meaning of every row already written.
+
+This is not hypothetical. `Algorithms` was reordered during development: `SHA_1` moved from
+ordinal 2 to 0, `SHA_256` from 4 to 1. `DigestRecord.algorithm` was stored as an ordinal, so
+any database written before the reorder would have had every digest re-attributed to a
+different algorithm. A SHA-1 hash would read back as SHA-512. Since `checkDigests()` matches
+on algorithm, the fixity comparison would either find no match and report `UNVERIFIED`,
+quietly abandoning the check, or compare hashes from two different algorithms and report
+`CHANGED` on a file that never changed.
+
+`EnumMappingTest` reflects over every registered entity and fails if any enum lands on an
+integer column. Do not weaken it into a hand-written list of columns; that is exactly how the
+`DigestRecord` one was missed.
+
+Changing an enum mapping changes the column type, and `hbm2ddl.auto: update` cannot convert
+`TINYINT` to `ENUM`. Existing dev databases must be deleted (see Dev Database below).
+
+## Front End: No CDNs
+
+All front-end assets (Bootstrap, Bootstrap Icons, jQuery, bootstrap-table) are **vendored**
+under `assets/css/vendor/` and `assets/js/vendor/` and served from the application. Do not
+reintroduce a CDN `<link>` or `<script>`. OpenFixity runs on air-gapped and network-restricted
+preservation workstations, where a CDN-dependent page renders unstyled, without icons, and
+with non-functional modals.
+
+Icons are **Bootstrap Icons** (`<i class="bi bi-...">`), not FontAwesome. The icon fonts live
+in `assets/css/vendor/fonts/` because the icons stylesheet resolves them by relative path.
+Bootstrap is loaded as the **bundle**, which embeds Popper, so dropdowns and tooltips work if
+anyone adds one.
+
+Third-party components are attributed in `NOTICE`. Add to it if you bundle anything new.
 
 ## Performance Patterns
 
