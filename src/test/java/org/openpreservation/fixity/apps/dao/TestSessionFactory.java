@@ -44,6 +44,10 @@ public class TestSessionFactory {
         return DATA_FACTORY;
     }
 
+    public static Session currentSession() {
+        return SESSION_FACTORY.getCurrentSession();
+    }
+
     public static void beginTransaction() {
         Session session = SESSION_FACTORY.openSession();
         ManagedSessionContext.bind(session);

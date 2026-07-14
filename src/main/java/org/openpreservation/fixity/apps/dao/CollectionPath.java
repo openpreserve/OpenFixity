@@ -93,9 +93,12 @@ public final class CollectionPath implements Serializable {
         return this.added;
     }
 
-    @SuppressWarnings("null")
     public String getName() {
-        return Path.of(root).getFileName().toString();
+        final Path path = Path.of(root);
+        final Path fileName = path.getFileName();
+        // Filesystem roots ("/", "C:\", a mounted volume) have no file name
+        // component and getFileName() returns null, so fall back to the root itself.
+        return (fileName == null) ? path.toString() : fileName.toString();
     }
 
     public String getFullPath() {

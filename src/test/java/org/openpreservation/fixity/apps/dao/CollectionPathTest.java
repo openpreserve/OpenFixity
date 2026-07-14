@@ -81,6 +81,18 @@ public class CollectionPathTest {
     }
 
     @Test
+    public void testGetNameOnFilesystemRootDoesNotThrow() {
+        // A filesystem root ("/", "C:\", a mounted volume) has no file name component and
+        // Path.getFileName() returns null there. Registering removable media or a network
+        // mount by its root is normal usage, so getName() must fall back to the root itself
+        // rather than dereferencing null.
+        Path root = testDirPathOne.getRoot();
+        assertNotNull(root);
+        CollectionPath cp = CollectionPath.of(root);
+        assertEquals(root.toString(), cp.getName());
+    }
+
+    @Test
     public void testGetFullPathReturnsAbsoluteString() {
         CollectionPath cp = CollectionPath.of(testDirPathOne);
         assertEquals(testDirPathOne.toAbsolutePath().normalize().toString(), cp.getFullPath());

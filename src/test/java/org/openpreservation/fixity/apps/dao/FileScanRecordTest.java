@@ -124,16 +124,68 @@ public class FileScanRecordTest {
     }
 
     private static FileScanResult damagedResult(final Path path) {
+        return damagedResult(path, Set.of());
+    }
+
+    private static FileScanResult damagedResult(final Path path, final Set<? extends DigestResult> digests) {
         return new FileScanResult() {
             @Override public Path getPath() { return path; }
             @Override public long getLength() { return 0L; }
             @Override public LocalDateTime getCreated() { return null; }
             @Override public LocalDateTime getModified() { return null; }
-            @Override public Set<? extends DigestResult> getDigestResults() { return Set.of(); }
+            @Override public Set<? extends DigestResult> getDigestResults() { return digests; }
             @Override public FileScanStatus getStatus() { return FileScanStatus.DAMAGED; }
             @SuppressWarnings("null")
             @Override public LocalDateTime getScanned() { return LocalDateTime.now(); }
         };
+    }
+
+    @Test
+    public void testRecoveredDamagedFileIsNotReportedAsAdded() throws IOException, NoSuchAlgorithmException {
+        // DAMAGED → SCANNED. The file was unreadable and is readable again. It is not a new
+        // file, so it must not be reported as ADDED. A damaged record carries no digests, so
+        // there is no baseline to compare against and UNVERIFIED is the honest answer.
+        FileScanRecord baseline = scan256();
+        FileScanRecord damaged = FileScanRecord.of(baseline.execution(), damagedResult(file));
+        FileScanRecord latest = scan256();
+        assertEquals(PathAuditStatus.UNVERIFIED, latest.updateStatus(damaged));
+    }
+
+    @Test
+    public void testRecoveredDamagedFileWithRetainedDigestIsVerified() throws IOException, NoSuchAlgorithmException {
+        // DAMAGED → SCANNED, where the damaged record retained a digest. Content is unchanged,
+        // so the digest comparison must be reached and must yield VERIFIED, not ADDED.
+        FileScanRecord good = scan256();
+        FileScanRecord damaged = FileScanRecord.of(good.execution(), damagedResult(file, good.getDigestResults()));
+        FileScanRecord latest = scan256();
+        assertEquals(PathAuditStatus.VERIFIED, latest.updateStatus(damaged));
+    }
+
+    @Test
+    public void testFileChangedWhileDamagedIsReportedAsChanged() throws IOException, NoSuchAlgorithmException {
+        // The case the old code got wrong. A file was damaged, its content changed, and it is
+        // readable again. The old fallthrough reported ADDED, masking a real change as a new
+        // file. It must be reported as CHANGED.
+        FileScanRecord good = scan256();
+        FileScanRecord damaged = FileScanRecord.of(good.execution(), damagedResult(file, good.getDigestResults()));
+        Files.writeString(file, "content altered while the file was unreadable");
+        FileScanRecord latest = scan256();
+        assertEquals(PathAuditStatus.CHANGED, latest.updateStatus(damaged));
+    }
+
+    @Test
+    public void testAbsentThenPresentFileIsStillAdded() throws IOException, NoSuchAlgorithmException {
+        // NOTFOUND → SCANNED. The file genuinely did not exist before, so ADDED is correct and
+        // must survive the fallthrough change above.
+        FileScanRecord baseline = scan256();
+        PathScan scan = baseline.execution();
+        Files.delete(file);
+        FileScanResult notFound = FileScanResult.of(file, Hasher.instance(EnumSet.of(Algorithms.SHA_256)));
+        FileScanRecord previous = FileScanRecord.of(scan, notFound);
+
+        Files.writeString(file, "original content");
+        FileScanRecord latest = scan256();
+        assertEquals(PathAuditStatus.ADDED, latest.updateStatus(previous));
     }
 
     @Test

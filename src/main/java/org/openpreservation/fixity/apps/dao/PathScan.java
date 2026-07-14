@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -53,6 +55,7 @@ public class PathScan implements Serializable {
     @JoinColumn(name = "collection_path_id")
     private CollectionPath collectionPath;
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private ScanStatus status;
     @OneToOne(cascade = CascadeType.ALL, optional = false)
     private PathSummaryRecord summary;

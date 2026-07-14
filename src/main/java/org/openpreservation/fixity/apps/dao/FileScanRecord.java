@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -47,6 +49,7 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     @Column(nullable = false, length = 65535)
     private final String relativePath;
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private PathAuditStatus auditStatus;
     @Column(nullable = true)
     private final @Nullable Long length;
@@ -57,6 +60,7 @@ public final class FileScanRecord implements FileScanResult, Serializable {
     @Column(nullable = false)
     private final LocalDateTime scanned;
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private final FileScanStatus status;
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
@@ -132,7 +136,22 @@ public final class FileScanRecord implements FileScanResult, Serializable {
 
     public PathAuditStatus updateStatus(final FileScanRecord previous) {
         if (this.status == previous.status) return this.auditStatus = processIdenticalStatus(this, previous);
-        return this.auditStatus = noPreviousStatus(this.status);
+        return this.auditStatus = processChangedStatus(this, previous);
+    }
+
+    private static PathAuditStatus processChangedStatus(final FileScanRecord latest, final FileScanRecord previous) {
+        // The file was absent at the previous scan and is present now, so it really is new.
+        if (previous.status == FileScanStatus.NOTFOUND) {
+            return PathAuditStatus.ADDED;
+        }
+        // The file is readable again after being damaged, denied or ignored. It is not a
+        // new file, so compare it against its last known digest rather than reporting
+        // ADDED. checkDigests yields UNVERIFIED when there is no digest to compare against.
+        if (latest.status == FileScanStatus.SCANNED) {
+            return checkDigests(latest, previous);
+        }
+        // Otherwise the file has become unreadable since the last scan. Report why.
+        return noPreviousStatus(latest.status);
     }
 
     private static final PathAuditStatus noPreviousStatus(FileScanStatus status) {
