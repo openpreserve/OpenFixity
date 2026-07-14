@@ -3,3 +3,28 @@ Copyright 2026 Open Preservation Foundation
 
 This product includes software developed at
 the Open Preservation Foundation (https://openpreservation.org/).
+
+--------------------------------------------------------------------------------
+Third-party components bundled with this product
+--------------------------------------------------------------------------------
+
+The web interface bundles the following components locally, rather than loading
+them from a CDN, so that OpenFixity works on air-gapped and network-restricted
+workstations. Each is redistributed under its own licence, and each retains its
+licence banner in the bundled file.
+
+Bootstrap 5.3.8
+  Copyright 2011-2025 The Bootstrap Authors
+  MIT License. https://github.com/twbs/bootstrap/blob/main/LICENSE
+
+Bootstrap Icons 1.13.1
+  Copyright 2019-2024 The Bootstrap Authors
+  MIT License. https://github.com/twbs/icons/blob/main/LICENSE
+
+jQuery 4.0.0
+  Copyright OpenJS Foundation and other contributors
+  MIT License. https://jquery.org/license/
+
+bootstrap-table 1.26.0
+  Copyright 2012-2024 Zhixin Wen
+  MIT License. https://github.com/wenzhixin/bootstrap-table/blob/develop/LICENSE
