@@ -1,44 +1,60 @@
 name: Java CI with Maven
 
 on:
-  push: 
-    branches: main
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main, dev ]
+
 jobs:
-  
-  mac-deploy:
-    
-    runs-on: macos-latest
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
 
-    name: Mac Deploy
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up OpenJDK 15
-      uses: joschi/setup-jdk@v2
-      with:
-        java-version: '17'
-    - name: Build with Maven
-      run: mvn clean package
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OS: mac
-        
-  
-  windows-deploy:
-    
-    runs-on: windows-latest
+    strategy:
+      # Report every platform's result, rather than cancelling the rest on one failure.
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
 
-    name: Windows Deploy
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up OpenJDK 15
-      uses: joschi/setup-jdk@v2
-      with:
-        java-version: '17'
-    - name: Build with Maven
-      run: mvn clean package
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        OS: windows
-    
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          # Caches ~/.m2, so runs do not re-download the dependency tree each time.
+          cache: maven
+
+      # verify, not package. SpotBugs is bound to the verify phase, and package runs
+      # before it, so `mvn package` would silently skip the static analysis.
+      - name: Build, test and analyse
+        run: mvn --batch-mode --no-transfer-progress clean verify
+
+      - name: Upload test results
+        # Runs even when the build fails, which is exactly when the reports are wanted.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+      - name: Upload SpotBugs report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-${{ matrix.os }}
+          path: target/spotbugsXml.xml
+          if-no-files-found: ignore
+
+      - name: Upload the shaded jar
+        # One platform is enough: the jar is platform independent.
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-fixity-jar
+          path: target/open-fixity-*.jar
+          if-no-files-found: error
