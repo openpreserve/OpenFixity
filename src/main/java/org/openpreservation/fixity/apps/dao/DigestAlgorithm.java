@@ -4,6 +4,8 @@ import org.openpreservation.fixity.core.digests.Algorithms;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -17,6 +19,7 @@ public class DigestAlgorithm {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(nullable = false, unique = true)
+    @Enumerated(EnumType.STRING)
     final Algorithms algorithm;
     private DigestAlgorithm(final Algorithms algorithm) { this.algorithm = algorithm; }
     public Algorithms getAlgorithm() { return algorithm; }
