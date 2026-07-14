@@ -1,6 +1,6 @@
-# Open Fixity
+# OpenFixity
 
-**Open Fixity** monitors the integrity of digital collections. It scans files on
+**OpenFixity** monitors the integrity of digital collections. It scans files on
 local disks, removable storage, and network locations, and reports whether anything
 has been changed, added, removed, moved, or renamed. Scans run on a schedule, so
 problems surface early.
@@ -8,7 +8,7 @@ problems surface early.
 It runs as a server with a web interface, or locally on a workstation in the way the
 desktop application always did.
 
-Open Fixity is the successor to Fixity Pro, originally developed by AVP and since
+OpenFixity is the successor to Fixity Pro, originally developed by AVP and since
 transferred to the Open Preservation Foundation. See
 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for the project's history, and for the
 people it is owed to.

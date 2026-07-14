@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-* Open Fixity is an application for monitoring and reporting on the fixity of files.
+* OpenFixity is an application for monitoring and reporting on the fixity of files.
 * Copyright (C) 2026 Open Preservation Foundation
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@
     <artifactId>open-fixity</artifactId>
     <version>1.0.0-ALPHA</version>
 
-    <name>Open Fixity</name>
+    <name>OpenFixity</name>
     <description>An application for monitoring and reporting on the fixity of files.</description>
 
     <organization>

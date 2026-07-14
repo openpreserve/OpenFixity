@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Open Fixity is a Dropwizard-based web application for monitoring digital file integrity (fixity). It scans file system paths, computes cryptographic hashes, and tracks changes over time. It provides both a REST API and a Mustache-templated web UI.
+OpenFixity is a Dropwizard-based web application for monitoring digital file integrity (fixity). It scans file system paths, computes cryptographic hashes, and tracks changes over time. It provides both a REST API and a Mustache-templated web UI.
 
 ## Build & Run Commands
 
