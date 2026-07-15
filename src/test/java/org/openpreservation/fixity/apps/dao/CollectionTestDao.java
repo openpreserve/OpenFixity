@@ -25,12 +25,12 @@ import java.util.Set;
 
 import jakarta.persistence.NoResultException;
 
-final class CollectionDao extends GenericDao<Long, Collection> {
-    protected CollectionDao() {
+final class CollectionTestDao extends GenericDao<Long, Collection> {
+    protected CollectionTestDao() {
         this("fixity-pu");
     }
 
-    protected CollectionDao(final String persistenceUnitName) {
+    protected CollectionTestDao(final String persistenceUnitName) {
         super(persistenceUnitName);
         setClass(Collection.class);
     }

@@ -19,33 +19,25 @@ package org.openpreservation.fixity.apps.dao;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.List;
 
-class FileScanRecordDao extends GenericDao<Long, FileScanRecord> {
+class PathScanTestDao extends GenericDao<Long, PathScan> {
 
-    protected FileScanRecordDao() {
+    protected PathScanTestDao() {
         this("fixity-pu");
     }
 
-    protected FileScanRecordDao(final String persistenceUnitName) {
+    protected PathScanTestDao(final String persistenceUnitName) {
         super(persistenceUnitName);
-        setClass(FileScanRecord.class);
+        setClass(PathScan.class);
     }    
 
     @Override
-    public FileScanRecord create(FileScanRecord record) throws SQLIntegrityConstraintViolationException {
-        if (record == null) throw new NullPointerException("FileSystemScanRecord is null");
-        DataManager.digestRecordDao().create(record.getDigestResults());
+    public PathScan create(PathScan record) throws SQLIntegrityConstraintViolationException {
+        if (record == null) throw new NullPointerException("PathScan is null");
         return super.create(record);
     }
 
     @Override
-    public List<FileScanRecord> findAll() {
+    public List<PathScan> findAll() {
         return super.findAll();
-    }
-
-    public void addAll(final Iterable<FileScanRecord> entities) throws SQLIntegrityConstraintViolationException {
-        if (entities == null) throw new NullPointerException("FileScanRecord iterator entities is null");
-        for (final FileScanRecord entity : entities) {
-            entityManager.persist(entity);
-        }
     }
 }

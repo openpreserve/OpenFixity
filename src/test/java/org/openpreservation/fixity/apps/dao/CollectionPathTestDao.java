@@ -22,12 +22,12 @@ import java.util.Optional;
 
 import jakarta.persistence.NoResultException;
 
-public final class CollectionPathDao extends GenericDao<Long, CollectionPath> {
-    protected CollectionPathDao() {
+public final class CollectionPathTestDao extends GenericDao<Long, CollectionPath> {
+    protected CollectionPathTestDao() {
         this("fixity-pu");
     }
 
-    protected CollectionPathDao(final String persistenceUnitName) {
+    protected CollectionPathTestDao(final String persistenceUnitName) {
         super(persistenceUnitName);
         setClass(CollectionPath.class);
     }    

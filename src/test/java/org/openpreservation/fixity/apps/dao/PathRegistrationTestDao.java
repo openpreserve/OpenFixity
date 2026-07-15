@@ -20,12 +20,12 @@ import java.util.Optional;
 
 import jakarta.persistence.NoResultException;
 
-final class PathRegistrationDao extends GenericDao<Long, PathRegistration> {
-    protected PathRegistrationDao() {
+final class PathRegistrationTestDao extends GenericDao<Long, PathRegistration> {
+    protected PathRegistrationTestDao() {
         this("fixity-pu");
     }
 
-    protected PathRegistrationDao(final String persistenceUnitName) {
+    protected PathRegistrationTestDao(final String persistenceUnitName) {
         super(persistenceUnitName);
         setClass(PathRegistration.class);
     }

@@ -18,26 +18,26 @@ package org.openpreservation.fixity.apps.dao;
 
 public class DataManager {
 
-    public static CollectionDao collectionDao() {
-        return new CollectionDao();
+    public static CollectionTestDao collectionDao() {
+        return new CollectionTestDao();
     }
 
-    public static CollectionPathDao collectionPathDao() {
-        return new CollectionPathDao();
+    public static CollectionPathTestDao collectionPathDao() {
+        return new CollectionPathTestDao();
     }
 
     public static DigestRecordDao digestRecordDao() {
         return new DigestRecordDao();
     }
 
-    public static FileScanRecordDao fileScanRecordDao() {
-        return new FileScanRecordDao();
+    public static FileScanRecordTestDao fileScanRecordDao() {
+        return new FileScanRecordTestDao();
     }
 
-    public static PathScanDao pathScanDao() {
-        return new PathScanDao();
+    public static PathScanTestDao pathScanDao() {
+        return new PathScanTestDao();
     }
-    public static PathRegistrationDao pathRegistrationDao() {
-        return new PathRegistrationDao();
+    public static PathRegistrationTestDao pathRegistrationDao() {
+        return new PathRegistrationTestDao();
     }
 }
