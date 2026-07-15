@@ -16,6 +16,7 @@
  */
 package org.openpreservation.fixity.apps.schedule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -88,5 +89,27 @@ public class ScheduleManagerTest {
         System.out.println("Job executed " + jobExecutionCount.get() + " times.");
         assertTrue(ScheduleManager.getScheduledJobKeys().stream().map(JobKey::getName).collect(Collectors.toList()).contains("TestJob"));
         ScheduleManager.deleteJob(jobDetail.getKey());
+    }
+
+    @Test
+    public void testScheduleScanIsIdempotentForSameIdentity() throws SchedulerException {
+        ScheduleManager.start();
+        // A cron far in the future: the job is scheduled but never fires during the test, so no
+        // real scan runs. Fields are sec min hour day-of-month month day-of-week year.
+        final String futureCron = "0 0 0 1 1 ? 2099";
+        JobDetail scheduled = ScheduleManager.scheduleScan(
+                ScanJobDetails.of("scan-idem", "scan-idem-group", futureCron, "/tmp/openfixity-idem", "SHA-256"));
+
+        // Re-scheduling the same identity must replace the job rather than throw
+        // ObjectAlreadyExistsException. This guards the "scan now" wedge that a leftover job
+        // (from a run killed before its trigger fired) used to cause.
+        ScheduleManager.scheduleScan(
+                ScanJobDetails.of("scan-idem", "scan-idem-group", futureCron, "/tmp/openfixity-idem", "SHA-256"));
+
+        long matching = ScheduleManager.getScheduledJobKeys().stream()
+                .filter(key -> "scan-idem".equals(key.getName()) && "scan-idem-group".equals(key.getGroup()))
+                .count();
+        assertEquals(1L, matching);
+        ScheduleManager.deleteJob(scheduled.getKey());
     }
 }

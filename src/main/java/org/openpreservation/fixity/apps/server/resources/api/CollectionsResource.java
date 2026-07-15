@@ -223,7 +223,8 @@ public class CollectionsResource {
         } catch (NoResultException e) {
             throw OpenFixityException.of(new NotFoundException("CollectionPath with id " + pathId + " not found.", e), "CollectionPath.id: " + pathId);
         } catch (SchedulerException e) {
-            throw OpenFixityException.of(new BadRequestException("Scheduling exception for collection " + name + ", path" + pathId, e));
+            logger.error("Failed to schedule scan for collection {}, path {}", name, pathId, e);
+            throw OpenFixityException.of(new BadRequestException("Scheduling exception for collection " + name + ", path " + pathId, e));
         }
     }
 }

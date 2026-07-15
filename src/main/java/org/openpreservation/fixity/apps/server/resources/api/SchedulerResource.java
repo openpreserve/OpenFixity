@@ -22,7 +22,13 @@ import org.quartz.SchedulerException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
+// Produce JSON so boolean results carry an application/json content type. Without it Jersey
+// serves a bare boolean as text/plain, which the SPA's fetch client discards as undefined,
+// leaving the scheduler status (and its Pause/Resume button) stuck.
+@Produces(MediaType.APPLICATION_JSON)
 @jakarta.ws.rs.Path("/api")
 public class SchedulerResource {
 

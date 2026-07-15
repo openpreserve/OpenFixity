@@ -82,6 +82,10 @@ public class ScheduleManager {
                 .usingJobData("algorithm", scanJobDetails.algorithm)
                 .build();
 
+        // Idempotent scheduling: drop any job already under this identity first, so a repeat
+        // scan (or a job left behind by a run that was killed before its trigger fired) does
+        // not fail with ObjectAlreadyExistsException. Recurring registration relies on this too.
+        scheduler.deleteJob(jobDetail.getKey());
         scheduler.scheduleJob(jobDetail, parseTrigger(scanJobDetails));
         return jobDetail;
     }
