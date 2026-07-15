@@ -18,7 +18,7 @@ mvn clean verify
 mvn clean package
 
 # Run the server (dev config)
-java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
+java -jar target/open-fixity-0.1.1-ALPHA.jar server dev-server.yml
 
 # Run all tests
 mvn test
@@ -150,7 +150,7 @@ The H2 file database lives at `~/.openfixity/open-fixity.*`. With `hbm2ddl.auto:
 
 ```bash
 rm ~/.openfixity/open-fixity.*
-java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
+java -jar target/open-fixity-0.1.1-ALPHA.jar server dev-server.yml
 ```
 
 ## Commit Conventions

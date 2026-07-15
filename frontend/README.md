@@ -18,7 +18,7 @@ OpenFixity Java backend on `http://localhost:8080`, so run the backend alongside
 
 ```bash
 # from the repository root
-java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
+java -jar target/open-fixity-0.1.1-ALPHA.jar server dev-server.yml
 ```
 
 The proxy targets are configured in `vite.config.ts`.

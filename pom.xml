@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.openpreservation.fixity</groupId>
     <artifactId>open-fixity</artifactId>
-    <version>0.1.0-ALPHA</version>
+    <version>0.1.1-ALPHA</version>
 
     <name>OpenFixity</name>
     <description>An application for monitoring and reporting on the fixity of files.</description>

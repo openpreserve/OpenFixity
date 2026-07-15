@@ -55,7 +55,7 @@ does this on a tag.
 ## Running the server
 
 ```bash
-java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
+java -jar target/open-fixity-0.1.1-ALPHA.jar server dev-server.yml
 ```
 
 The React app is served at <http://localhost:8080/app>. Configuration lives in

@@ -32,7 +32,7 @@ NUMERIC="$(echo "${FULL_VERSION}" | sed -E 's/-.*$//')"
 OS="$(uname -s)"
 
 # macOS rejects a CFBundleVersion whose first component is 0 ("The first number in the version
-# must be greater than zero"). Our alpha is 0.1.0, so on macOS ONLY we pass a compliant version
+# must be greater than zero"). Our alpha is 0.1.1, so on macOS ONLY we pass a compliant version
 # for that invisible bundle metadata. The filename and the app's own /api/info still report the
 # true FULL_VERSION, so nothing a user sees is affected.
 JP_VERSION="${NUMERIC}"
@@ -146,7 +146,7 @@ if [ -n "${INSTALLER_TYPE}" ]; then
         ${EXTRA[@]+"${EXTRA[@]}"}
 
     # Rename to a consistent, version-honest name for distribution:
-    #   OpenFixity-0.1.0-ALPHA-mac-arm64.dmg
+    #   OpenFixity-0.1.1-ALPHA-mac-arm64.dmg
     for f in target/desktop/*."${INSTALLER_TYPE}"; do
         [ -f "$f" ] || continue
         mv "$f" "target/desktop/${APP_NAME}-${FULL_VERSION}-${PLATFORM}.${INSTALLER_TYPE}"
