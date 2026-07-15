@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react'
-import { Bell, HelpCircle, Info, Palette, RotateCcw } from 'lucide-react'
+import { Bell, HelpCircle, Info, Palette, RotateCcw, Server, Copy, Check, GitBranch, ExternalLink, Bug } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 import { hslToHex, hexToHSL, type ThemeMode, type ColorScheme } from '@/lib/colors'
 import { useTutorial } from '@/lib/tutorial'
+import { isCronSchedulingEnabled, setCronSchedulingEnabled } from '@/lib/settings'
+import { useAppInfo } from '@/hooks/api'
+
+function formatUptime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return `${minutes}m ${seconds}s`
+  return `${seconds}s`
+}
 
 export default function SettingsPage() {
   const tutorial = useTutorial()
@@ -15,7 +27,22 @@ export default function SettingsPage() {
     resetColors 
   } = useTheme()
   const [devMode, setDevMode] = useState(false)
+  const [cronScheduling, setCronScheduling] = useState(false)
   const [notifications, setNotifications] = useState<any[]>([])
+  const { data: appInfo } = useAppInfo()
+  const [copied, setCopied] = useState(false)
+
+  const appUrl = `${window.location.origin}/app`
+
+  const copyAppUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(appUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Clipboard may be unavailable (e.g. non-secure context); the URL is still shown to copy manually.
+    }
+  }
 
   useEffect(() => {
     document.title = 'Settings | OpenFixity';
@@ -27,6 +54,7 @@ export default function SettingsPage() {
     
     if (savedDevMode) setDevMode(savedDevMode === 'true')
     if (savedNotifications) setNotifications(JSON.parse(savedNotifications))
+    setCronScheduling(isCronSchedulingEnabled())
   }, [])
 
   const handleColorChange = (key: keyof ColorScheme, hexValue: string) => {
@@ -43,6 +71,12 @@ export default function SettingsPage() {
     const newValue = !devMode
     setDevMode(newValue)
     localStorage.setItem('devMode', String(newValue))
+  }
+
+  const handleCronSchedulingToggle = () => {
+    const newValue = !cronScheduling
+    setCronScheduling(newValue)
+    setCronSchedulingEnabled(newValue)
   }
   
   const clearNotificationHistory = () => {
@@ -240,6 +274,57 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {/* System */}
+        <div className="bg-card rounded-lg shadow border border-foreground/10 p-6">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
+            <Server className="w-5 h-5" />
+            System
+          </h3>
+
+          <div>
+            <p className="text-sm text-foreground/70 mb-1">Open in a browser</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href={appUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-sm text-accent hover:underline break-all"
+              >
+                {appUrl}
+              </a>
+              <button
+                type="button"
+                onClick={copyAppUrl}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded border border-foreground/20 text-foreground hover:bg-foreground/10"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <p className="text-xs text-foreground/50 mt-1">
+              The desktop app serves this UI on a local port. Paste this into a browser to use it there,
+              including the browser dev tools.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm border-t border-foreground/10 mt-4 pt-4">
+            {[
+              ['Port', window.location.port || '(default)'],
+              ['Version', appInfo?.version ?? '…'],
+              ['Application', appInfo?.appName ?? 'OpenFixity'],
+              ['Uptime', appInfo ? formatUptime(appInfo.uptimeMillis) : '…'],
+              ['Java', appInfo ? `${appInfo.javaVersion} (${appInfo.javaVendor})` : '…'],
+              ['OS', appInfo ? `${appInfo.osName} ${appInfo.osArch}` : '…'],
+              ['Dropwizard', appInfo?.dropwizardVersion ?? '…'],
+            ].map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-4">
+                <span className="text-foreground/60">{label}</span>
+                <span className="text-foreground font-mono text-right break-all">{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* About */}
         <div className="bg-card rounded-lg shadow border border-foreground/10 p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
@@ -253,24 +338,61 @@ export default function SettingsPage() {
             <p className="text-foreground/70">
               Monitor file collections, generate checksums, track integrity over time
             </p>
-            <div className="border-t border-foreground/10 pt-4 mt-4">
-              <p className="text-foreground/70">Open Preservation Foundation</p>
-              <p className="text-xs text-foreground/60 mt-1">
-                For support and documentation, visit the project repository
-              </p>
+            <div className="border-t border-foreground/10 pt-4 mt-4 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="https://openpreservation.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-foreground/20 text-foreground hover:bg-foreground/10 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> Open Preservation Foundation
+                </a>
+                <a
+                  href="https://github.com/openpreserve/OpenFixity"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border border-foreground/20 text-foreground hover:bg-foreground/10 transition-colors"
+                >
+                  <GitBranch className="w-3.5 h-3.5" /> GitHub Repository
+                </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2">
+                <Bug className="w-4 h-4 text-accent flex-none" />
+                <span className="text-sm text-foreground">Found a bug or have a request?</span>
+                <a
+                  href="https://github.com/openpreserve/OpenFixity/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sm:ml-auto inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  Report an issue <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Future Settings Placeholder */}
+        {/* Advanced Settings */}
         <div className="bg-card rounded-lg shadow border border-foreground/10 p-6">
           <h3 className="text-xl font-semibold mb-4 text-foreground">Advanced Settings</h3>
-          <p className="text-foreground/70 text-sm">
-            Future options: Default scan intervals, notification preferences, API connection settings
-          </p>
-          <p className="text-xs text-foreground/60 mt-2">
-            These settings will be synchronized with the backend in future releases
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-foreground">Cron Scheduling Interface</p>
+              <p className="text-sm text-foreground/70">
+                Add a raw Quartz cron option when creating scheduled scans, alongside the frequency presets.
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cronScheduling}
+                onChange={handleCronSchedulingToggle}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
