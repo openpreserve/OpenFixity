@@ -1,0 +1,49 @@
+
+# OpenFixity server configuration for the Docker image.
+#
+# Differs from dev-server.yml in two ways: it binds to 0.0.0.0 (so the container's published
+# port is reachable) and it stores data under /data (the mounted volume) rather than the home
+# directory. Because it binds to all interfaces and OpenFixity has no built-in authentication,
+# publish the port to 127.0.0.1 only, or put it behind an authenticating reverse proxy. See
+# DOCKER.md.
+server:
+  applicationConnectors:
+    - type: "http"
+      port: 8080
+      bindHost: "0.0.0.0"
+  adminConnectors:
+    - type: "http"
+      port: 8081
+      bindHost: "0.0.0.0"
+
+database:
+  driverClass: "org.h2.Driver"
+  url: "jdbc:h2:/data/openfixity;AUTO_SERVER=TRUE"
+  logValidationErrors: true
+  ignoreExceptionOnPreLoad: true
+  properties:
+    charSet: UTF-8
+    hibernate.dialect: org.hibernate.dialect.H2Dialect
+    hibernate.hbm2ddl.delimiter: ";"
+    hibernate.hbm2ddl.auto: update
+    hibernate.cache.use_second_level_cache: false
+    hibernate.show_sql: false
+    hibernate.format_sql: false
+    hibernate.jpa.compliance: true
+    hibernate.jdbc.batch_size: 50
+    hibernate.order_inserts: true
+    hibernate.order_updates: true
+  maxWaitForConnection: 1s
+  validationQuery: "/* OpenFixity Health Check */ SELECT 1"
+  minSize: 4
+  maxSize: 12
+  checkConnectionWhileIdle: false
+
+logging:
+  level: "INFO"
+  loggers:
+    "org.openpreservation":
+      level: "INFO"
+  # Log to stdout so `docker logs` captures it.
+  appenders:
+    - type: "console"

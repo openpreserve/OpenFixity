@@ -22,7 +22,7 @@ OpenFixity is one application with three front doors:
 2. **Server**. The same application run as a web server, for example alongside the
    network storage it scans. The UI is served in a browser.
 3. **Docker**. The server, containerised, to run as a service next to network
-   drives.
+   drives. See [DOCKER.md](DOCKER.md).
 
 The user interface is a React single page app, served by the application itself.
 A legacy server-rendered UI is also present during the transition.

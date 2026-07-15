@@ -1,0 +1,12 @@
+# Keep the build context small and the build reproducible: everything below is either a build
+# artefact, a local convenience, or downloaded during the image build.
+target/
+frontend/node_modules/
+frontend/dist/
+.git/
+.github/
+log/
+*.md
+branding/
+dependency-reduced-pom.xml
+.DS_Store

@@ -1,0 +1,33 @@
+# OpenFixity as a service. See DOCKER.md for the full guide.
+#
+#   docker compose up -d      start it
+#   open http://127.0.0.1:8080/app
+#   docker compose logs -f    watch the logs
+#   docker compose down       stop it (data is kept in the named volume)
+
+services:
+  openfixity:
+    build: .
+    # Or use a published image once one exists:
+    # image: openpreserve/openfixity:latest
+    container_name: openfixity
+
+    ports:
+      # Published to 127.0.0.1 only: OpenFixity has no authentication, so it must not be exposed
+      # on the network as-is. To reach it from other machines, put an authenticating reverse
+      # proxy in front, or change this to "8080:8080" only on a trusted, isolated network.
+      - "127.0.0.1:8080:8080"
+
+    volumes:
+      # The H2 database and logs. A named volume, so data survives `docker compose down`.
+      - openfixity-data:/data
+
+      # Mount the directories you want to scan, read-only, then browse to them in the UI.
+      # Read-only (:ro) is deliberate: OpenFixity only ever reads the files it checks.
+      # Example: expose /srv/collections on the host as /scan in the container.
+      # - /srv/collections:/scan:ro
+
+    restart: unless-stopped
+
+volumes:
+  openfixity-data:
