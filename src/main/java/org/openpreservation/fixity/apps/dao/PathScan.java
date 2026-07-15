@@ -19,7 +19,6 @@ package org.openpreservation.fixity.apps.dao;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -204,10 +203,12 @@ public class PathScan implements Serializable {
         this.summary = PathSummaryRecord.of(result.getSummary(), damaged, denied);
     }
 
-    @SuppressWarnings("null")
     private static String parentFolderPath(final String relativePath) {
-        Path parent = Path.of(relativePath).getParent();
-        return parent != null ? parent.toString() : "";
+        // Work on the "/"-separated relativePath directly. Round-tripping through Path.of(...)
+        // .getParent().toString() would re-introduce the OS separator on Windows ("subdir\nested"),
+        // breaking the folder hierarchy that getOrCreateFolder builds by splitting on "/".
+        final int lastSlash = relativePath.lastIndexOf('/');
+        return lastSlash >= 0 ? relativePath.substring(0, lastSlash) : "";
     }
 
     public boolean isCompleted() {

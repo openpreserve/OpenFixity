@@ -132,7 +132,12 @@ public interface Folder {
 
     @SuppressWarnings("null")
     public static String relativise(final String root, final Path relative) {
-        return Optional.of(Path.of(root).relativize(relative).toString())
+        // Normalise to forward slashes. Path.relativize().toString() uses the OS separator, so on
+        // Windows it would return "subdir\nested" while the folder-hierarchy logic (and every
+        // stored relativePath) works in "/". Forcing "/" keeps stored paths identical regardless
+        // of which OS ran the scan, which matters when the same collection is scanned from more
+        // than one machine.
+        return Optional.of(Path.of(root).relativize(relative).toString().replace('\\', '/'))
             .orElseThrow( () ->
                 new IllegalArgumentException(String.format("Path '%s' cannot be relativized against root '%s'", relative, root)));
     }
