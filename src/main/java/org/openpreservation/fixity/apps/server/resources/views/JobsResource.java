@@ -16,6 +16,7 @@
  */
 package org.openpreservation.fixity.apps.server.resources.views;
 
+import org.openpreservation.fixity.apps.dao.DataFactory;
 import org.openpreservation.fixity.apps.schedule.ScheduleManager;
 import org.openpreservation.fixity.apps.server.views.JobsView;
 import org.quartz.SchedulerException;
@@ -27,18 +28,20 @@ import jakarta.ws.rs.Path;
 
 @Path("/jobs")
 public class JobsResource {
-    public JobsResource() {
-        super();
+    private final DataFactory dataFactory;
+
+    public JobsResource(final DataFactory dataFactory) {
+        this.dataFactory = dataFactory;
     }
 
     @UnitOfWork
     @GET
     public JobsView getSchedules() {
         try {
-            return new JobsView(ScheduleManager.getScheduledJobKeys());
+            return new JobsView(ScheduleManager.getScheduledJobKeys(),
+                    dataFactory.scanScheduleDAO().findAll());
         } catch (SchedulerException e) {
-            throw new InternalServerErrorException("Failed to schedule job: " + e.getMessage(), e);
+            throw new InternalServerErrorException("Failed to read scheduled jobs: " + e.getMessage(), e);
         }
     }
-
 }

@@ -65,6 +65,7 @@ public class EnumMappingTest {
             PathRegistration.class,
             PathScan.class,
             PathSummaryRecord.class,
+            ScanSchedule.class,
     };
 
     @BeforeEach

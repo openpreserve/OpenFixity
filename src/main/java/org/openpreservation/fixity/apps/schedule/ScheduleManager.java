@@ -117,6 +117,33 @@ public class ScheduleManager {
         scheduler.deleteJob(jobKey);
     }
 
+    /** Quartz group for persisted recurring schedules, kept separate from one-off scan jobs. */
+    public static final String SCHEDULE_GROUP = "scheduled";
+
+    /**
+     * Register a persisted recurring scan with Quartz. Replaces any existing job of the same
+     * name first, so re-registering an updated schedule does not fail with "job already exists".
+     *
+     * @param jobName   a stable name unique to the schedule (see ScanSchedule.getJobName)
+     * @param toScan    the absolute path to scan
+     * @param algorithm the digest algorithm name (e.g. "SHA-256")
+     * @param cron      the Quartz cron expression
+     */
+    public static JobDetail scheduleRecurringScan(final String jobName, final String toScan,
+            final String algorithm, final String cron) throws SchedulerException {
+        unscheduleQuietly(jobName);
+        return scheduleScan(ScanJobDetails.of(jobName, SCHEDULE_GROUP, cron, toScan, algorithm));
+    }
+
+    /** Remove a recurring schedule's job if present; never throws, for use on delete and re-register. */
+    public static void unscheduleQuietly(final String jobName) {
+        try {
+            scheduler.deleteJob(JobKey.jobKey(jobName, SCHEDULE_GROUP));
+        } catch (final SchedulerException ignored) {
+            // best-effort: nothing to remove, or the scheduler is unavailable
+        }
+    }
+
     public static List<JobKey> getScheduledJobKeys() throws SchedulerException {
         List<JobKey> retVal = new ArrayList<>();
         for (String groupName : scheduler.getJobGroupNames()) {

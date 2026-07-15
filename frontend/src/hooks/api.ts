@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
+import type { ScheduleRequest } from '@/types/api';
 
 // Query keys
 export const queryKeys = {
@@ -13,6 +14,7 @@ export const queryKeys = {
   scan: (id: number) => ['scans', id] as const,
   scheduler: ['scheduler'] as const,
   jobs: ['scheduler', 'jobs'] as const,
+  schedules: ['schedules'] as const,
   algorithms: ['algorithms'] as const,
   settings: ['settings'] as const,
   appInfo: ['appInfo'] as const,
@@ -389,5 +391,41 @@ export function useAppInfo() {
     queryKey: queryKeys.appInfo,
     queryFn: () => apiClient.getAppInfo(),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// Recurring scan schedules
+export function useSchedules() {
+  return useQuery({
+    queryKey: queryKeys.schedules,
+    queryFn: () => apiClient.listSchedules(),
+  });
+}
+
+export function useCreateSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: ScheduleRequest) => apiClient.createSchedule(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules });
+      toast.success('Schedule created');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to create schedule: ${error.message}`);
+    },
+  });
+}
+
+export function useDeleteSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.deleteSchedule(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules });
+      toast.success('Schedule removed');
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to remove schedule: ${error.message}`);
+    },
   });
 }

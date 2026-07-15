@@ -26,6 +26,10 @@
         <Class name="org.openpreservation.fixity.apps.schedule.ScanUpdater" />
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
     </Match>
+    <Match>
+        <Class name="~org\.openpreservation\.fixity\.apps\.server\.ScheduleRegistrar.*" />
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    </Match>
 
     <!--
       View classes are DTOs handed straight to Mustache, and the configuration holds

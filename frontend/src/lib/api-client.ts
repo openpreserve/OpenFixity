@@ -9,6 +9,8 @@ import type {
   SettingsMap,
   AppInfo,
   FileRecheckResult,
+  ScanSchedule,
+  ScheduleRequest,
 } from '@/types/api';
 
 const API_BASE = '/api';
@@ -277,6 +279,22 @@ class ApiClient {
   async deleteScheduledJob(_triggerKey: string): Promise<void> {
     // Java backend doesn't have job control endpoints
     throw new Error('Job deletion not supported by Java backend');
+  }
+
+  // Recurring scan schedules (backed by /api/schedules on the Java server).
+  async listSchedules(): Promise<ScanSchedule[]> {
+    return this.request<ScanSchedule[]>('/schedules');
+  }
+
+  async createSchedule(request: ScheduleRequest): Promise<ScanSchedule> {
+    return this.request<ScanSchedule>('/schedules', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteSchedule(id: number): Promise<void> {
+    return this.request<void>(`/schedules/${id}/`, { method: 'DELETE' });
   }
 }
 

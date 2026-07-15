@@ -51,6 +51,7 @@ public class TestSessionFactory {
                 .addAnnotatedClass(PathRegistration.class)
                 .addAnnotatedClass(PathScan.class)
                 .addAnnotatedClass(PathSummaryRecord.class)
+                .addAnnotatedClass(ScanSchedule.class)
                 .buildMetadata()
                 .buildSessionFactory();
         DATA_FACTORY = new DataFactory(SESSION_FACTORY);

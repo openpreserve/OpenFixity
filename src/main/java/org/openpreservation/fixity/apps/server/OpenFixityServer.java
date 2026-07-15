@@ -28,6 +28,7 @@ import org.openpreservation.fixity.apps.dao.FolderScanRecord;
 import org.openpreservation.fixity.apps.dao.PathRegistration;
 import org.openpreservation.fixity.apps.dao.PathScan;
 import org.openpreservation.fixity.apps.dao.PathSummaryRecord;
+import org.openpreservation.fixity.apps.dao.ScanSchedule;
 import org.openpreservation.fixity.apps.schedule.JobDetailSerializer;
 import org.openpreservation.fixity.apps.server.config.OpenFixityConfiguration;
 import org.openpreservation.fixity.apps.server.exceptions.OpenFixityExceptionMapper;
@@ -78,7 +79,8 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
                                                      FolderScanRecord.class,
                                                      PathRegistration.class,
                                                      PathScan.class,
-                                                     PathSummaryRecord.class)
+                                                     PathSummaryRecord.class,
+                                                     ScanSchedule.class)
         {
             @Override
             public DataSourceFactory getDataSourceFactory(OpenFixityConfiguration configuration) {
@@ -139,6 +141,10 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
             }
         });
         environment.lifecycle().manage(new QuartzManager());
+        // After Quartz is up, re-register any persisted recurring schedules (Quartz's job store
+        // is in-memory, so schedules would otherwise vanish on restart). Managed after
+        // QuartzManager so the scheduler is running when this starts.
+        environment.lifecycle().manage(new ScheduleRegistrar());
         environment.jersey().register(new OpenFixityExceptionMapper());
         environment.jersey().register(new WebApplicationExceptionMapper());
         environment.jersey().register(new IndexResource());
@@ -156,8 +162,9 @@ public class OpenFixityServer extends Application<OpenFixityConfiguration> {
         // JSON scan API and app info, both required by the React frontend.
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.ScansResource(dataFactory));
         environment.jersey().register(org.openpreservation.fixity.apps.server.resources.api.AppInfoResource.class);
-        environment.jersey().register(new JobsResource());
+        environment.jersey().register(new JobsResource(dataFactory));
         environment.jersey().register(new SchedulerResource());
+        environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.SchedulesResource(dataFactory));
         environment.jersey().register(new org.openpreservation.fixity.apps.server.resources.api.ScanResultsResource(dataFactory));
     }
 

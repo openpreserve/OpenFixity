@@ -27,6 +27,7 @@ public class DataFactory {
     private final FileScanRecordDAO fileScanRecordDAO;
     private final PathScanDAO pathScanDAO;
     private final FolderScanRecordDAO folderScanRecordDAO;
+    private final ScanScheduleDAO scanScheduleDAO;
 
     public DataFactory(SessionFactory sessionFactory) {
         this.collectionDAO = new CollectionDAO(sessionFactory);
@@ -35,6 +36,7 @@ public class DataFactory {
         this.fileScanRecordDAO = new FileScanRecordDAO(sessionFactory);
         this.pathScanDAO = new PathScanDAO(sessionFactory);
         this.folderScanRecordDAO = new FolderScanRecordDAO(sessionFactory);
+        this.scanScheduleDAO = new ScanScheduleDAO(sessionFactory);
     }
     public CollectionDAO collectionDAO() {
         return this.collectionDAO;
@@ -53,5 +55,8 @@ public class DataFactory {
     }
     public FolderScanRecordDAO folderScanRecordDAO() {
         return this.folderScanRecordDAO;
+    }
+    public ScanScheduleDAO scanScheduleDAO() {
+        return this.scanScheduleDAO;
     }
 }

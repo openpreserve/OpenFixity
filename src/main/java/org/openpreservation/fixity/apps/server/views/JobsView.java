@@ -18,16 +18,27 @@ package org.openpreservation.fixity.apps.server.views;
 
 import java.util.List;
 
+import org.openpreservation.fixity.apps.dao.ScanSchedule;
 import org.quartz.JobKey;
 
 public class JobsView extends FixityAppView {
     private final List<JobKey> jobKeys;
-    public JobsView(final List<JobKey> jobKeys) {
+    private final List<ScanSchedule> schedules;
+    public JobsView(final List<JobKey> jobKeys, final List<ScanSchedule> schedules) {
         super("jobs.mustache", "jobs");
         this.jobKeys = jobKeys;
+        this.schedules = schedules;
     }
 
     public List<JobKey> getJobKeys() {
         return jobKeys;
+    }
+
+    public List<ScanSchedule> getSchedules() {
+        return schedules;
+    }
+
+    public boolean isHasSchedules() {
+        return schedules != null && !schedules.isEmpty();
     }
 }

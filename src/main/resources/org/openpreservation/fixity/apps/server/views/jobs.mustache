@@ -17,6 +17,33 @@
       <button class="btn btn-outline-primary" id="pauseResume"><i class="bi bi-question-circle-fill"></i> Status..</button>
     </p>
     {{> partials/tables/jobs }}
+
+    <h2 class="mt-4"><i class="bi bi-clock"></i> Recurring schedules</h2>
+    {{^ hasSchedules }}
+      <p class="text-muted">No recurring scans are scheduled. Set one up from a path's page.</p>
+    {{/ hasSchedules }}
+    {{# hasSchedules }}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Path</th>
+            <th>Schedule</th>
+            <th>Algorithm</th>
+            <th>Enabled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{# schedules }}
+          <tr>
+            <td><i class="bi bi-folder-fill"></i> {{ pathName }}</td>
+            <td>{{ description }} <span class="text-muted">({{ cron }})</span></td>
+            <td>{{ algorithm }}</td>
+            <td>{{# enabled }}<i class="bi bi-check-circle-fill text-success"></i>{{/ enabled }}{{^ enabled }}<i class="bi bi-slash-circle text-muted"></i>{{/ enabled }}</td>
+          </tr>
+          {{/ schedules }}
+        </tbody>
+      </table>
+    {{/ hasSchedules }}
   </div><!-- end container -->
   {{> partials/footer}}
   <script>

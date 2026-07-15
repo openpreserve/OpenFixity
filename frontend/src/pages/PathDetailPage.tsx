@@ -3,6 +3,7 @@ import { usePath, useCollections, useScanPath, useDeregisterPath, useAlgorithms,
 import { Play, RefreshCw, X } from 'lucide-react';
 import { formatJavaDateTime, type PathScan } from '@/types/api';
 import { defaultAlgorithm, AlgorithmHint } from '@/lib/algorithm';
+import { SchedulePanel } from '@/components/SchedulePanel';
 import { useState, useEffect } from 'react';
 
 export default function PathDetailPage() {
@@ -231,6 +232,9 @@ export default function PathDetailPage() {
           </table>
         </div>
       )}
+
+      {/* Recurring scan schedules for this path */}
+      <SchedulePanel pathId={path.id} algorithm={selectedAlgorithm || 'SHA-256'} />
 
       {/* Deregister Modal */}
       {showDeregisterModal && selectedCollection && (

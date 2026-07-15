@@ -249,3 +249,32 @@ export interface ApiError {
   path?: string;
   timestamp?: string;
 }
+
+export type Frequency = 'HOURLY' | 'DAILY' | 'WEEKLY';
+
+/** A persisted recurring scan schedule, as returned by GET /api/schedules. */
+export interface ScanSchedule {
+  id: number;
+  pathId: number | null;
+  pathName: string;
+  pathRoot: string;
+  frequency: Frequency;
+  minute: number;
+  hour: number;
+  dayOfWeek: number;   // 1 (Sun) to 7 (Sat)
+  algorithm: string;
+  cron: string;        // the derived Quartz cron expression
+  enabled: boolean;
+  created: JavaLocalDateTime;
+}
+
+/** Body for POST /api/schedules. Supply a preset (frequency + time) or a raw cron. */
+export interface ScheduleRequest {
+  pathId: number;
+  frequency?: Frequency;
+  minute?: number;
+  hour?: number;
+  dayOfWeek?: number;
+  algorithm?: string;
+  cron?: string;
+}
