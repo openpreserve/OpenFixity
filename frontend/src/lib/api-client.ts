@@ -234,7 +234,8 @@ class ApiClient {
         this.isSchedulerPaused()
       ]);
       return {
-        status: isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped',
+        // Standby (paused) reports isRunning=false, so check paused first or it reads "Stopped".
+        status: isPaused ? 'Paused' : (isRunning ? 'Running' : 'Stopped'),
         running: isRunning,
         paused: isPaused,
         jobCount: 0 // Java backend doesn't provide this endpoint

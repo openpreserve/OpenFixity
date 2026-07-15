@@ -264,6 +264,7 @@ export interface ScanSchedule {
   dayOfWeek: number;   // 1 (Sun) to 7 (Sat)
   algorithm: string;
   cron: string;        // the derived Quartz cron expression
+  description: string; // human sentence built by the server (e.g. "Every day at 02:00")
   enabled: boolean;
   created: JavaLocalDateTime;
 }
