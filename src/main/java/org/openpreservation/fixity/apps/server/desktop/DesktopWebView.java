@@ -19,9 +19,11 @@ package org.openpreservation.fixity.apps.server.desktop;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.web.WebView;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -59,10 +61,23 @@ public class DesktopWebView extends Application {
         final WebView webView = new WebView();
         webView.getEngine().load(OpenFixityDesktop.appUrl);
 
-        final Scene scene = new Scene(webView, 1280, 860);
+        // Cap the initial (restore) size to the screen's work area. A fixed size larger than the
+        // display — common on smaller or scaled screens — centres so that the title bar sits above
+        // the top of the screen, leaving users unable to grab, move or resize the window.
+        final Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+        final double width = Math.min(1280, screen.getWidth());
+        final double height = Math.min(860, screen.getHeight());
+
+        final Scene scene = new Scene(webView, width, height);
         stage.setTitle("OpenFixity");
         stage.setScene(scene);
+        stage.setMinWidth(Math.min(800, screen.getWidth()));
+        stage.setMinHeight(Math.min(600, screen.getHeight()));
         loadIcon(stage);
+        stage.centerOnScreen();
+        // Open maximised so the title bar is always on-screen and reachable. The capped size above
+        // is what the window restores to when un-maximised. Not full screen, which hides the bar.
+        stage.setMaximized(true);
         stage.show();
     }
 
