@@ -24,8 +24,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Assumptions;
 
 public class Utils {
+
+    /**
+     * Skip (not fail) a test whose setup needs a genuinely unreadable file or directory when the
+     * OS will not create that condition. {@code File.setReadable(false)} is a no-op on Windows,
+     * so a path meant to be denied stays readable there and any assertion about denial is invalid.
+     *
+     * <p>This does not mask a product bug: the scanner still reports DENIED for files it genuinely
+     * cannot read (e.g. an NTFS ACL that denies the current user), which these tests cannot
+     * synthesise on Windows. The affected tests run on Linux and macOS.
+     */
+    public static void assumeReadDenialHonoured(final Path path) {
+        Assumptions.assumeFalse(Files.isReadable(path),
+                "Skipped: this OS does not honour read-denial via setReadable (e.g. Windows), "
+                        + "so the unreadable-path precondition cannot be created here: " + path);
+    }
     
     public static final boolean deleteDirectory(final File directory) {
         if (directory == null || !directory.exists()) {
@@ -55,13 +71,18 @@ public class Utils {
         file = Files.createFile(testPath.resolve("file2.txt"));
         Files.write(file, "file2.txt".getBytes(StandardCharsets.UTF_8));
         Files.createDirectory(testPath.resolve("dir1"));
-        file = Files.createFile(testPath.resolve("dir1/file3.txt"));
-        Files.write(file, "file3.txt".getBytes(StandardCharsets.UTF_8));
-        file.toFile().setReadable(false);
+        Path file3 = Files.createFile(testPath.resolve("dir1/file3.txt"));
+        Files.write(file3, "file3.txt".getBytes(StandardCharsets.UTF_8));
+        file3.toFile().setReadable(false);
         Path dir2 = Files.createDirectory(testPath.resolve("dir2"));
         file = Files.createFile(testPath.resolve("dir2/file4.txt"));
         Files.write(file, "file4.txt".getBytes(StandardCharsets.UTF_8));
         dir2.toFile().setReadable(false);
+        // The scan counts and statuses every consumer of this fixture asserts depend on file3
+        // and dir2 being unreadable. Where the OS will not honour that (Windows), skip rather
+        // than report misleading failures.
+        assumeReadDenialHonoured(file3);
+        assumeReadDenialHonoured(dir2);
         return testPath;
     }
 

@@ -172,6 +172,7 @@ public class PathScanBehaviourTest {
     public void testDeniedFileHasDeniedAuditStatusOnFirstScan() throws IOException, NoSuchAlgorithmException {
         // A first-scan DENIED file must have DENIED audit status, not ADDED
         file1.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file1);
         PathScan scan = batchScan();
         FileScanRecord denied = scan.getAllFiles().stream()
                 .filter(r -> r.getStatus() == FileScanStatus.DENIED)
@@ -189,18 +190,21 @@ public class PathScanBehaviourTest {
     @Test
     public void testIsDeniedTrueWhenFileIsDenied() throws IOException, NoSuchAlgorithmException {
         file1.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file1);
         assertTrue(batchScan().isDenied());
     }
 
     @Test
     public void testGetDeniedCountIsCorrect() throws IOException, NoSuchAlgorithmException {
         file1.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file1);
         assertEquals(1, batchScan().getDeniedCount());
     }
 
     @Test
     public void testGetDeniedResultsContainsDeniedFile() throws IOException, NoSuchAlgorithmException {
         file1.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file1);
         PathScan scan = batchScan();
         assertEquals(1, scan.getDeniedResults().size());
         assertEquals(FileScanStatus.DENIED, scan.getDeniedResults().get(0).getStatus());

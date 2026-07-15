@@ -113,6 +113,7 @@ public class FileScanRecordTest {
         // DENIED/SCANNED — different FileScanStatus → noPreviousStatus(DENIED) → DENIED
         FileScanRecord baseline = scan256();
         file.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file);
         FileScanRecord latest = scan256();
         assertEquals(FileScanStatus.DENIED, latest.getStatus());
         assertEquals(PathAuditStatus.DENIED, latest.updateStatus(baseline));

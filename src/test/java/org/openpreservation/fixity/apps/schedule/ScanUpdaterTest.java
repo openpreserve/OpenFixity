@@ -133,6 +133,7 @@ public class ScanUpdaterTest {
             throws FileNotFoundException, NoSuchAlgorithmException, IOException {
         // Both scans see file1 as DENIED — audit status must be DENIED, not ADDED inherited from scan 1
         file1.toFile().setReadable(false);
+        Utils.assumeReadDenialHonoured(file1);
         PathScan previous = scan();
         PathScan latest = scan();
         new ScanUpdater(null).updateScan(latest, previous);
