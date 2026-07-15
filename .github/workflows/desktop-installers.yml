@@ -1,0 +1,146 @@
+name: Desktop installers
+
+# Builds native desktop installers (each with a bundled Java runtime) via jpackage, then
+# publishes them to the OPF artifact server and attaches them to the GitHub Release.
+#
+# jpackage cannot cross-compile, and JavaFX ships arch-specific native libraries, so every
+# target is built on its own OS+arch runner:
+#   Linux  x64    (ubuntu-latest)        -> .deb
+#   macOS  x64    (macos-13, Intel)      -> .dmg
+#   macOS  arm64  (macos-latest, Apple)  -> .dmg
+#   Windows x64   (windows-latest)       -> .msi
+#
+# There is no Linux arm64 target: JavaFX publishes no linux-aarch64 build, so the native
+# window cannot be packaged there. ARM Linux users run the server or Docker instead.
+#
+# Trigger:
+#   - a v* tag           -> build, upload to the artifact server, attach to the Release
+#   - manual dispatch    -> build and upload the installers as workflow artifacts only
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create/attach to the GitHub Release
+
+jobs:
+  package:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: linux-x64
+          - os: macos-13          # Intel
+            artifact: mac-x64
+          - os: macos-latest      # Apple Silicon
+            artifact: mac-arm64
+          - os: windows-latest
+            artifact: windows-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin, includes jpackage)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Ensure WiX Toolset 3.x (Windows MSI)
+        # jpackage on JDK 17 uses WiX 3 (candle.exe / light.exe). windows-latest already ships
+        # WiX 3.14; --force makes a re-install idempotent instead of exiting 1.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install wixtoolset -y --no-progress --force
+
+      - name: Build the installer
+        shell: bash
+        run: ./build-desktop.sh
+
+      - name: Upload to the OPF artifact server
+        # Only on a tag, and only when the token is configured. A missing token skips cleanly
+        # rather than failing the build, so forks and untokened runs still produce artifacts.
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.ARTIFACT_UPLOAD_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "ARTIFACT_UPLOAD_TOKEN not set; skipping artifact-server upload."
+            exit 0
+          fi
+          REPO_SAFE="$(echo '${{ github.repository }}' | tr '/' '-')"
+          VERSION_SAFE="$(echo '${{ github.ref_name }}' | tr '/:' '--')"
+          BASE="https://artifacts.opf-labs.org/upload/${REPO_SAFE}/${VERSION_SAFE}"
+
+          # Portable hashing: macOS has md5/shasum, Linux and git-bash have md5sum/sha256sum.
+          md5_of()    { if command -v md5sum    >/dev/null; then md5sum "$1"    | awk '{print $1}'; else md5 -q "$1"; fi; }
+          sha256_of() { if command -v sha256sum >/dev/null; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
+
+          shopt -s nullglob
+          for f in target/desktop/*.deb target/desktop/*.rpm target/desktop/*.dmg target/desktop/*.msi target/desktop/*.exe; do
+            case "$f" in
+              *.deb) TYPE="Debian Package" ;;
+              *.rpm) TYPE="RPM Package" ;;
+              *.dmg) TYPE="macOS Disk Image" ;;
+              *.msi) TYPE="Windows Installer" ;;
+              *.exe) TYPE="Windows Installer" ;;
+              *)     TYPE="Desktop Installer" ;;
+            esac
+            echo "Uploading $(basename "$f") (${TYPE})…"
+            curl -X POST "${BASE}" \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -F "file=@${f}" \
+              -F "md5=$(md5_of "$f")" \
+              -F "sha256=$(sha256_of "$f")" \
+              -F "file_type=${TYPE}" \
+              --max-time 1800 \
+              --fail-with-body
+          done
+          echo "Browse: https://artifacts.opf-labs.org/browse/${REPO_SAFE}/${VERSION_SAFE}"
+
+      - name: Upload installers as workflow artifacts
+        # Always, so manual (dispatch) runs and untokened tag runs still yield downloads.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openfixity-${{ matrix.artifact }}
+          path: |
+            target/desktop/*.deb
+            target/desktop/*.rpm
+            target/desktop/*.dmg
+            target/desktop/*.msi
+            target/desktop/*.exe
+          if-no-files-found: warn
+
+      - name: Attach to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/desktop/*.deb
+            target/desktop/*.rpm
+            target/desktop/*.dmg
+            target/desktop/*.msi
+            target/desktop/*.exe
+          fail_on_unmatched_files: false
+          body: |
+            OpenFixity desktop installers.
+
+            These installers are **not code-signed**. On first launch:
+            - **macOS**: right-click the app and choose *Open*, then confirm, to get past Gatekeeper.
+            - **Windows**: on the SmartScreen prompt, choose *More info* then *Run anyway*.
+
+            See INSTALL.md for details.

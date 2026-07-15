@@ -41,11 +41,18 @@ if [ "${OS}" = "Darwin" ] && [[ "${NUMERIC}" == 0.* ]]; then
 fi
 
 # --- platform label + icon -----------------------------------------------------------------
+# Normalise the arch name so installer filenames read x64 / arm64 consistently.
+case "$(uname -m)" in
+    x86_64|amd64) ARCH="x64" ;;
+    aarch64|arm64) ARCH="arm64" ;;
+    *) ARCH="$(uname -m)" ;;
+esac
+
 ICON_DIR="branding/icons"
 ICON=""
 case "${OS}" in
-    Linux)               PLATFORM="linux-$(uname -m)";  ICON="${ICON_DIR}/OpenFixity.png" ;;
-    Darwin)              PLATFORM="mac-$(uname -m)";     ICON="${ICON_DIR}/OpenFixity.icns"
+    Linux)               PLATFORM="linux-${ARCH}";  ICON="${ICON_DIR}/OpenFixity.png" ;;
+    Darwin)              PLATFORM="mac-${ARCH}";     ICON="${ICON_DIR}/OpenFixity.icns"
         # iconutil (macOS only) compiles the .iconset into the .icns jpackage wants. Non-fatal:
         # if it fails, jpackage falls back to its default icon rather than aborting the build.
         if [ ! -f "${ICON}" ] && [ -d "${ICON_DIR}/OpenFixity.iconset" ] && command -v iconutil >/dev/null; then
