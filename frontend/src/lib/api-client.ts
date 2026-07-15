@@ -257,31 +257,6 @@ class ApiClient {
     return [];
   }
 
-  async scheduleJob(_jobData: any): Promise<JobDetail> {
-    // Java backend doesn't have /scheduler/schedule endpoint
-    throw new Error('Job scheduling not supported by Java backend');
-  }
-
-  async cancelJob(_jobId: string): Promise<void> {
-    // Java backend doesn't have /scheduler/cancel endpoint
-    throw new Error('Job cancellation not supported by Java backend');
-  }
-
-  async stopScheduledJob(_triggerKey: string): Promise<{ ok: boolean }> {
-    // Java backend doesn't have job control endpoints
-    throw new Error('Job control not supported by Java backend');
-  }
-
-  async startScheduledJob(_triggerKey: string): Promise<{ ok: boolean }> {
-    // Java backend doesn't have job control endpoints
-    throw new Error('Job control not supported by Java backend');
-  }
-
-  async deleteScheduledJob(_triggerKey: string): Promise<void> {
-    // Java backend doesn't have job control endpoints
-    throw new Error('Job deletion not supported by Java backend');
-  }
-
   // Recurring scan schedules (backed by /api/schedules on the Java server).
   async listSchedules(): Promise<ScanSchedule[]> {
     return this.request<ScanSchedule[]>('/schedules');

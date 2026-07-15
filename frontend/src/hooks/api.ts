@@ -294,69 +294,6 @@ export function useJobs() {
   });
 }
 
-export function useScheduleJob() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (jobData: any) => apiClient.scheduleJob(jobData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs });
-      toast.success('Job scheduled successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to schedule job: ${error.message}`);
-    },
-  });
-}
-
-export function useStopScheduledJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (triggerKey: string) => apiClient.stopScheduledJob(triggerKey),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs });
-      queryClient.invalidateQueries({ queryKey: queryKeys.scheduler });
-      toast.success('Job stopped');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to stop job: ${error.message}`);
-    },
-  });
-}
-
-export function useStartScheduledJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (triggerKey: string) => apiClient.startScheduledJob(triggerKey),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs });
-      queryClient.invalidateQueries({ queryKey: queryKeys.scheduler });
-      toast.success('Job started');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to start job: ${error.message}`);
-    },
-  });
-}
-
-export function useDeleteScheduledJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (triggerKey: string) => apiClient.deleteScheduledJob(triggerKey),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.jobs });
-      queryClient.invalidateQueries({ queryKey: queryKeys.scheduler });
-      toast.success('Job deleted');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete job: ${error.message}`);
-    },
-  });
-}
-
 export function useAlgorithms() {
   return useQuery({
     queryKey: queryKeys.algorithms,
