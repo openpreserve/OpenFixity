@@ -54,7 +54,7 @@ public class PathScanTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testDirPath.toFile());
+        Utils.deleteDirectory(testDirPath);
     }
 
     @SuppressWarnings("null")

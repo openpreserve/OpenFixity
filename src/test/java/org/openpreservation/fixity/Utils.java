@@ -43,6 +43,15 @@ public class Utils {
                         + "so the unreadable-path precondition cannot be created here: " + path);
     }
     
+    /**
+     * Null-safe cleanup for {@code @AfterEach}. When {@code @BeforeEach} skips a test via an
+     * assumption (see {@link #assumeReadDenialHonoured}), the path field is never assigned, so
+     * tearDown must tolerate a null path rather than throwing and turning the skip into an error.
+     */
+    public static final boolean deleteDirectory(final Path directory) {
+        return directory == null ? true : deleteDirectory(directory.toFile());
+    }
+
     public static final boolean deleteDirectory(final File directory) {
         if (directory == null || !directory.exists()) {
             return true;

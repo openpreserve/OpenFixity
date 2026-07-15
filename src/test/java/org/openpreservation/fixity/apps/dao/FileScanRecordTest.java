@@ -52,7 +52,7 @@ public class FileScanRecordTest {
     @AfterEach
     public void tearDown() throws IOException {
         file.toFile().setReadable(true);
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     /** Scan testDir with the given algorithms; return the FileScanRecord for file.txt. */

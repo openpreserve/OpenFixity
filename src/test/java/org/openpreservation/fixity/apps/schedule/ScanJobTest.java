@@ -51,7 +51,7 @@ public class ScanJobTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     @Test

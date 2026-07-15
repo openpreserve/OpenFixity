@@ -46,7 +46,7 @@ public class CollectionTest {
 
     @AfterAll
     public static void tearDown() throws IOException {
-        Utils.deleteDirectory(testPath.toFile());
+        Utils.deleteDirectory(testPath);
     }
 
     @BeforeEach

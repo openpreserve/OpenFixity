@@ -37,7 +37,7 @@ public class FileScanResultTest {
 
     @AfterEach
     public void tearDown() throws IOException {
-        Utils.deleteDirectory(testPath.toFile());
+        Utils.deleteDirectory(testPath);
     }
 
     @Test

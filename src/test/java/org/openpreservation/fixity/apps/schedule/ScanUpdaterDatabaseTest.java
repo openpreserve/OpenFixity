@@ -66,7 +66,7 @@ public class ScanUpdaterDatabaseTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     private PathScan runScan() throws NoSuchAlgorithmException, IOException, JobExecutionException {

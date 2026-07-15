@@ -105,7 +105,7 @@ public class ScanUpdaterConcurrentTest {
 
     @AfterEach
     void cleanupTempDirs() {
-        tempDirs.forEach(d -> Utils.deleteDirectory(d.toFile()));
+        tempDirs.forEach(d -> Utils.deleteDirectory(d));
         tempDirs.clear();
     }
 

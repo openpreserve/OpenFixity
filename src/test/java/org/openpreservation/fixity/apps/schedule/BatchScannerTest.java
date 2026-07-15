@@ -53,7 +53,7 @@ public class BatchScannerTest {
 
     @AfterEach
     public void tearDown() throws IOException {
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     @SuppressWarnings("null")

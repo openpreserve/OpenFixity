@@ -54,8 +54,8 @@ public class PathRegistrationTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testPathOne.toFile());
-        Utils.deleteDirectory(testPathTwo.toFile());
+        Utils.deleteDirectory(testPathOne);
+        Utils.deleteDirectory(testPathTwo);
     }
 
     // --- PathRegistration domain behaviour ---

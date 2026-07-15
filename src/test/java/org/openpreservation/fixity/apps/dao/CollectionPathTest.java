@@ -54,8 +54,8 @@ public class CollectionPathTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testDirPathOne.toFile());
-        Utils.deleteDirectory(testDirPathTwo.toFile());
+        Utils.deleteDirectory(testDirPathOne);
+        Utils.deleteDirectory(testDirPathTwo);
     }
 
     // --- CollectionPath.of() factory guards ---

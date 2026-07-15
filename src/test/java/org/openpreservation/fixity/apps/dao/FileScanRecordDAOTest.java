@@ -67,7 +67,7 @@ public class FileScanRecordDAOTest {
     @AfterEach
     public void tearDown() throws IOException {
         TestSessionFactory.rollback();
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     private FileScanRecord firstRecord() {

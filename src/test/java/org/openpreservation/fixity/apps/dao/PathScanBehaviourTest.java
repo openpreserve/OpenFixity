@@ -61,7 +61,7 @@ public class PathScanBehaviourTest {
     public void tearDown() throws IOException {
         file1.toFile().setReadable(true);
         file2.toFile().setReadable(true);
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     /** Scan testDir with BatchScanner; returns the resulting (completed) PathScan. */
@@ -239,7 +239,7 @@ public class PathScanBehaviourTest {
                     .scan(otherDir, Hasher.instance(EnumSet.of(Algorithms.SHA_256)), false);
             assertThrows(IllegalArgumentException.class, () -> scan.updateFrom(wrongResult));
         } finally {
-            Utils.deleteDirectory(otherDir.toFile());
+            Utils.deleteDirectory(otherDir);
         }
     }
 

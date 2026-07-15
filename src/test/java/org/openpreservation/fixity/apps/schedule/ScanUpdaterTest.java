@@ -62,7 +62,7 @@ public class ScanUpdaterTest {
     public void tearDown() throws IOException {
         file1.toFile().setReadable(true);
         file2.toFile().setReadable(true);
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     @SuppressWarnings("null")

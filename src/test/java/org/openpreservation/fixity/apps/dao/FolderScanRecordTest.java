@@ -44,7 +44,7 @@ public class FolderScanRecordTest {
 
     @AfterEach
     public void tearDown() throws IOException {
-        Utils.deleteDirectory(testDir.toFile());
+        Utils.deleteDirectory(testDir);
     }
 
     // --- FolderScanRecord.of() ---
