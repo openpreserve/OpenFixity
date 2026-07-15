@@ -41,12 +41,18 @@ if [ "${OS}" = "Darwin" ] && [[ "${NUMERIC}" == 0.* ]]; then
 fi
 
 # --- platform label + icon -----------------------------------------------------------------
-# Normalise the arch name so installer filenames read x64 / arm64 consistently.
-case "$(uname -m)" in
-    x86_64|amd64) ARCH="x64" ;;
-    aarch64|arm64) ARCH="arm64" ;;
-    *) ARCH="$(uname -m)" ;;
-esac
+# Normalise the arch name so installer filenames read x64 / arm64 consistently. TARGET_ARCH
+# overrides the host detection for a cross-build (an x64 installer produced on an Apple Silicon
+# runner via an x64 JDK under Rosetta 2), where uname would otherwise report the host's arm64.
+if [ -n "${TARGET_ARCH:-}" ]; then
+    ARCH="${TARGET_ARCH}"
+else
+    case "$(uname -m)" in
+        x86_64|amd64) ARCH="x64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+        *) ARCH="$(uname -m)" ;;
+    esac
+fi
 
 ICON_DIR="branding/icons"
 ICON=""

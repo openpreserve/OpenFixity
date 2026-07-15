@@ -4,11 +4,16 @@ name: Desktop installers
 # publishes them to the OPF artifact server and attaches them to the GitHub Release.
 #
 # jpackage cannot cross-compile, and JavaFX ships arch-specific native libraries, so every
-# target is built on its own OS+arch runner:
-#   Linux  x64    (ubuntu-latest)        -> .deb
-#   macOS  x64    (macos-13, Intel)      -> .dmg
-#   macOS  arm64  (macos-latest, Apple)  -> .dmg
-#   Windows x64   (windows-latest)       -> .msi
+# target is built on a runner whose JDK matches that target's architecture:
+#   Linux  x64    (ubuntu-latest)              -> .deb
+#   macOS  x64    (macos-latest + Rosetta 2)   -> .dmg
+#   macOS  arm64  (macos-latest, Apple)        -> .dmg
+#   Windows x64   (windows-latest)             -> .msi
+#
+# The Intel .dmg is built on an Apple Silicon runner with an x64 JDK running under Rosetta 2,
+# rather than on the scarce macos-13 (Intel) pool that frequently never allocates a runner.
+# Under Rosetta the JVM reports os.arch=x86_64, so Maven activates the javafx-mac-x64 profile
+# and jpackage bundles an x64 runtime: the output is a genuine x64 build, not a mislabel.
 #
 # There is no Linux arm64 target: JavaFX publishes no linux-aarch64 build, so the native
 # window cannot be packaged there. ARM Linux users run the server or Docker instead.
@@ -35,8 +40,11 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact: linux-x64
-          - os: macos-13          # Intel
+          - os: macos-latest      # Apple Silicon, x64 JDK under Rosetta 2 -> Intel .dmg
             artifact: mac-x64
+            jdk_arch: x64
+            target_arch: x64
+            rosetta: true
           - os: macos-latest      # Apple Silicon
             artifact: mac-arm64
           - os: windows-latest
@@ -45,11 +53,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Rosetta 2 (x64 build on Apple Silicon)
+        # Rosetta must be present before any x64 java runs, including setup-java's version check.
+        # Idempotent: exits 0 when Rosetta is already installed.
+        if: matrix.rosetta
+        run: softwareupdate --install-rosetta --agree-to-license
+
       - name: Set up JDK 17 (Temurin, includes jpackage)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          # Empty for native runners (setup-java defaults to the host arch); 'x64' forces the
+          # Intel JDK on the Apple Silicon runner so jpackage emits an x64 bundle under Rosetta.
+          architecture: ${{ matrix.jdk_arch || '' }}
           cache: maven
 
       - name: Set up Node
@@ -66,6 +83,10 @@ jobs:
 
       - name: Build the installer
         shell: bash
+        env:
+          # Labels the output arch explicitly for the Rosetta cross-build, where uname would
+          # report the host's arm64. Empty on native runners, which fall back to uname.
+          TARGET_ARCH: ${{ matrix.target_arch || '' }}
         run: ./build-desktop.sh
 
       - name: Upload to the OPF artifact server
@@ -129,6 +150,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          # Pre-release for -ALPHA / -BETA / -RC tags, so it does not show as "Latest".
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             target/desktop/*.deb
             target/desktop/*.rpm
