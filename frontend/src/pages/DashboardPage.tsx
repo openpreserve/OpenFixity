@@ -228,7 +228,7 @@ export default function DashboardPage() {
                   <Activity className="w-5 h-5" />
                   Recent Activity
                 </h3>
-                <Link to="/scans" className="text-sm text-accent hover:underline">View all scans</Link>
+                <Link to="/scans?tab=scans" className="text-sm text-accent hover:underline">View all scans</Link>
               </div>
 
               {recentScans.length === 0 ? (
@@ -312,7 +312,7 @@ export default function DashboardPage() {
               <Link to="/paths" className="px-4 py-3 bg-background border border-foreground/10 rounded-lg hover:border-accent/50 transition-colors text-sm font-medium text-center">
                 Browse Paths
               </Link>
-              <Link to="/scans" className="px-4 py-3 bg-background border border-foreground/10 rounded-lg hover:border-accent/50 transition-colors text-sm font-medium text-center">
+              <Link to="/scans?tab=scans" className="px-4 py-3 bg-background border border-foreground/10 rounded-lg hover:border-accent/50 transition-colors text-sm font-medium text-center">
                 Open Scans
               </Link>
               <Link to="/settings" className="px-4 py-3 bg-background border border-foreground/10 rounded-lg hover:border-accent/50 transition-colors text-sm font-medium text-center">
