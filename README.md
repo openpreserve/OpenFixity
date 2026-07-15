@@ -5,9 +5,6 @@ local disks, removable storage, and network locations, and reports whether anyth
 has been changed, added, removed, moved, or renamed. Scans run on a schedule, so
 problems surface early.
 
-It runs as a server with a web interface, or locally on a workstation in the way the
-desktop application always did.
-
 OpenFixity is the successor to Fixity Pro, originally developed by AVP and since
 transferred to the Open Preservation Foundation. See
 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) for the project's history, and for the
@@ -15,23 +12,55 @@ people it is owed to.
 
 > **Status: pre-alpha.** Not yet ready for use against collections you care about.
 
+## Ways to run it
+
+OpenFixity is one application with three front doors:
+
+1. **Desktop app** (primary). A native installer for Windows, macOS, and Linux,
+   with a bundled Java runtime, so users install nothing else. It opens the UI in
+   its own window and keeps all data on the local machine.
+2. **Server**. The same application run as a web server, for example alongside the
+   network storage it scans. The UI is served in a browser.
+3. **Docker**. The server, containerised, to run as a service next to network
+   drives.
+
+The user interface is a React single page app, served by the application itself.
+A legacy server-rendered UI is also present during the transition.
+
 ## Building
 
-Requires JDK 17 and Maven.
+Requires **JDK 17**, **Maven**, and **Node 20+** (Maven downloads its own Node for
+the build; a local install is only needed for frontend development).
 
 ```bash
-mvn clean package
+# Build everything: React frontend, tests, static analysis, and the runnable jar.
+mvn clean verify
 ```
 
-## Running
+`mvn clean verify` is the full build. It runs the tests and SpotBugs; `mvn clean
+package` builds the jar without them. Add `-DskipFrontend=true` to build the
+backend alone, without Node.
+
+### Desktop installers
+
+```bash
+./build-desktop.sh
+```
+
+Produces a native installer in `target/desktop` for the OS it runs on
+(`.msi` on Windows, `.dmg` on macOS, `.deb` or `.rpm` on Linux). jpackage cannot
+cross-compile, so each platform is built on its own machine; the GitHub workflow
+does this on a tag.
+
+## Running the server
 
 ```bash
 java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
 ```
 
-The web application is served at <http://localhost:8080>. Configuration lives in
-`dev-server.yml`. Data is persisted to an embedded H2 database at
-`~/.openfixity/open-fixity`.
+The React app is served at <http://localhost:8080/app>. Configuration lives in
+`dev-server.yml`; data is persisted to an embedded H2 database under
+`~/.openfixity`.
 
 ## Architecture
 
@@ -41,9 +70,11 @@ The web application is served at <http://localhost:8080>. Configuration lives in
 | `core/paths` | Path scanning, file scan results, path summaries |
 | `apps/dao` | JPA entities and DAOs for collections, paths, registrations, scans |
 | `apps/schedule` | Quartz jobs, schedule manager, batch scanner |
-| `apps/server` | Dropwizard application, REST API, Mustache views |
+| `apps/server` | Dropwizard application, REST API, and the desktop launcher |
+| `frontend/` | React single page app (Vite, TanStack Query, Tailwind) |
 
-Java 17, Dropwizard 5, Hibernate 6, embedded H2, Quartz.
+Java 17, Dropwizard 5, Hibernate 6, embedded H2, Quartz, JavaFX for the desktop
+window, and a React frontend embedded in the jar.
 
 ## Licence
 

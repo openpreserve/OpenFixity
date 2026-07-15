@@ -1,84 +1,50 @@
-# React + TypeScript + Vite
+# OpenFixity frontend
 
-## OpenFixity frontend note
+The OpenFixity user interface: a React single page app built with Vite, TanStack
+Query, and Tailwind. It is served by the OpenFixity Java application at `/app`; the
+Maven build compiles it and embeds it in the jar, so it is not deployed separately.
 
-This frontend proxies API calls to the Go backend on `http://localhost:8080` via `/api`.
+For the project as a whole, see the [top-level README](../README.md).
 
-For folder navigation and register-path workflows, backend folder IDs may be served in either mode:
+## Development
 
-- `db-id` (default): database-backed numeric IDs.
-- `java-hash`: Java-compatible signed hash IDs (`FOLDER_ID_MODE=java-hash`, or `JAVA_COMPAT_FOLDER_IDS=true`).
-
-The frontend supports either mode as long as responses and subsequent requests use the same backend mode consistently.
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+`npm run dev` starts Vite with hot reload. It proxies `/api` and `/scans` to the
+OpenFixity Java backend on `http://localhost:8080`, so run the backend alongside it:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# from the repository root
+java -jar target/open-fixity-0.1.0-ALPHA.jar server dev-server.yml
 ```
+
+The proxy targets are configured in `vite.config.ts`.
+
+## Build
+
+```bash
+npm run build   # outputs to dist/
+```
+
+You rarely need to run this directly. `mvn clean package` at the repository root
+builds the frontend and copies `dist/` into the jar automatically.
+
+## Notes
+
+- The canonical backend is the Java application in this repository. An earlier Go
+  implementation was only ever a stand-in used while the Java backend was being
+  built, and is not part of this project.
+- The app is bundled to run offline: fonts and all assets are local, with no CDN or
+  external requests, so it works on air-gapped workstations.
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Vite dev server with hot reload, proxying to the backend |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint |
