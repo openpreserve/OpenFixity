@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- OpenFixity app-icon master: the radar-sweep "scanning circle" mark on a square dark
+       canvas (no wordmark). Full-bleed 1024x1024 — feed this to an icon generator, which
+       will apply per-platform rounding/masking (.icns / .ico / .png). -->
+  <defs>
+    <radialGradient id="of-arc" cx=".66" fx=".66" cy=".3125" fy=".3125"
+                    gradientTransform="translate(1 1) scale(-1.5)">
+      <stop offset="0"  stop-color="#08e900"/>
+      <stop offset=".3" stop-color="#08e900" stop-opacity=".9"/>
+      <stop offset=".6" stop-color="#08e900" stop-opacity=".6"/>
+      <stop offset=".8" stop-color="#08e900" stop-opacity=".3"/>
+      <stop offset="1"  stop-color="#08e900" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- dark background -->
+  <rect width="1024" height="1024" fill="#111827"/>
+
+  <!-- the ring (authored in 200-unit space, scaled + centred into the 1024 canvas) -->
+  <g transform="translate(72 72) scale(4.4)" fill="none" stroke-linecap="round">
+    <!-- faint full track -->
+    <circle cx="100" cy="100" r="70" stroke="#7c8696" stroke-width="20"/>
+    <!-- green radar-sweep arc (~45% coverage, fading tail); rotated clockwise so the bright
+         head sits top-left like the marketing logo -->
+    <circle cx="100" cy="100" r="70" stroke="url(#of-arc)" stroke-width="20"
+            stroke-dasharray="197.9 439.8" transform="rotate(90 100 100)"/>
+  </g>
+</svg>

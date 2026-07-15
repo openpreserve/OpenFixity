@@ -1,0 +1,47 @@
+# Generated at runtime by OpenFixityDesktop. Placeholders (__APP_PORT__, __ADMIN_PORT__,
+# __LOG_FILE__) are substituted before the server starts. Bound to loopback only.
+server:
+  applicationConnectors:
+    - type: "http"
+      port: __APP_PORT__
+      bindHost: "127.0.0.1"
+  adminConnectors:
+    - type: "http"
+      port: __ADMIN_PORT__
+      bindHost: "127.0.0.1"
+database:
+  driverClass: "org.h2.Driver"
+  url: "__DB_URL__"
+  logValidationErrors: true
+  ignoreExceptionOnPreLoad: true
+  properties:
+    charSet: UTF-8
+    hibernate.dialect: org.hibernate.dialect.H2Dialect
+    hibernate.hbm2ddl.delimiter: ";"
+    hibernate.hbm2ddl.auto: update
+    hibernate.cache.use_second_level_cache: false
+    hibernate.show_sql: false
+    hibernate.format_sql: false
+    hibernate.jpa.compliance: true
+    hibernate.jdbc.batch_size: 50
+    hibernate.order_inserts: true
+    hibernate.order_updates: true
+  maxWaitForConnection: 1s
+  validationQuery: "/* OpenFixity Health Check */ SELECT 1"
+  minSize: 4
+  maxSize: 12
+  checkConnectionWhileIdle: false
+logging:
+  level: "INFO"
+  loggers:
+    "org.openpreservation":
+      level: "INFO"
+  appenders:
+    - type: "console"
+    - type: "file"
+      currentLogFilename: "__LOG_FILE__"
+      threshold: "ALL"
+      archive: true
+      archivedLogFilenamePattern: "__LOG_FILE__.%d.gz"
+      archivedFileCount: 7
+      logFormat: "%-5p [%d{ISO8601,UTC}] %c: %m%n%rEx"

@@ -94,6 +94,17 @@
     </Match>
 
     <!--
+      The desktop launcher IS an application entry point. When the user closes the window,
+      System.exit is the correct way to terminate the JVM, which stops the embedded server via
+      its shutdown hook. SpotBugs flags System.exit because it is dangerous in library code;
+      this is not library code.
+    -->
+    <Match>
+        <Class name="org.openpreservation.fixity.apps.server.desktop.DesktopWebView" />
+        <Bug pattern="DM_EXIT" />
+    </Match>
+
+    <!--
       Folder and PathScanResult are the scan's object graph. Their getters return the child
       folders and file results by reference because traversal is the whole point; copying the
       tree on every access would be pointless and slow.

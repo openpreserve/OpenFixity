@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- OpenFixity app-icon master, ROUNDED: dark squircle with TRANSPARENT corners (rx ≈ 22%,
+       macOS-style). Used to generate the .icns / .ico / .png the desktop installers embed. -->
+  <defs>
+    <radialGradient id="of-arc" cx=".66" fx=".66" cy=".3125" fy=".3125"
+                    gradientTransform="translate(1 1) scale(-1.5)">
+      <stop offset="0"  stop-color="#08e900"/>
+      <stop offset=".3" stop-color="#08e900" stop-opacity=".9"/>
+      <stop offset=".6" stop-color="#08e900" stop-opacity=".6"/>
+      <stop offset=".8" stop-color="#08e900" stop-opacity=".3"/>
+      <stop offset="1"  stop-color="#08e900" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- dark rounded background; corners outside this stay transparent -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224" fill="#111827"/>
+
+  <g transform="translate(72 72) scale(4.4)" fill="none" stroke-linecap="round">
+    <circle cx="100" cy="100" r="70" stroke="#7c8696" stroke-width="20"/>
+    <circle cx="100" cy="100" r="70" stroke="url(#of-arc)" stroke-width="20"
+            stroke-dasharray="197.9 439.8" transform="rotate(90 100 100)"/>
+  </g>
+</svg>

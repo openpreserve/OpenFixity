@@ -53,6 +53,10 @@
         <frontend.node.version>v22.12.0</frontend.node.version>
         <!-- Set -DskipFrontend=true to build the backend alone, without Node. -->
         <skipFrontend>false</skipFrontend>
+        <javafx.version>17.0.10</javafx.version>
+        <!-- Default native classifier; the os-activated profiles below override it. JavaFX
+             ships per-platform native jars, so the classifier must match the build machine. -->
+        <javafx.platform>linux</javafx.platform>
     </properties>
     <dependencies>
         <dependency>
@@ -117,6 +121,44 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-views-mustache</artifactId>
             <version>${dropwizard.version}</version>
+        </dependency>
+        <!--
+          JavaFX WebView, for the desktop app's native window (see apps/server/desktop). The
+          classifier is set per-OS by the profiles at the bottom of this file. These are on the
+          normal compile path so the desktop launcher compiles in every build; the server and
+          Docker deployments simply never load the JavaFX classes.
+        -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
+        </dependency>
+        <!-- javafx-web pulls javafx-media transitively; declared explicitly with the classifier
+             so Maven does not resolve the empty, classifier-less jar instead. -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>${javafx.platform}</classifier>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -319,5 +361,36 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <!--
+      Selects the JavaFX native bundle matching the OS and architecture of the build machine.
+      jpackage cannot cross-compile, so the desktop installer is always built on its target
+      platform, and these profiles activate automatically from the OS.
+
+      Note: there is no linux-aarch64 JavaFX build on Maven Central for this version, so ARM
+      Linux cannot build the native-window desktop app; it runs the server/Docker path instead.
+    -->
+    <profiles>
+        <profile>
+            <id>javafx-linux-x64</id>
+            <activation><os><family>unix</family><name>Linux</name><arch>amd64</arch></os></activation>
+            <properties><javafx.platform>linux</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>javafx-mac-x64</id>
+            <activation><os><family>mac</family><arch>x86_64</arch></os></activation>
+            <properties><javafx.platform>mac</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>javafx-mac-arm64</id>
+            <activation><os><family>mac</family><arch>aarch64</arch></os></activation>
+            <properties><javafx.platform>mac-aarch64</javafx.platform></properties>
+        </profile>
+        <profile>
+            <id>javafx-win-x64</id>
+            <activation><os><family>windows</family><arch>amd64</arch></os></activation>
+            <properties><javafx.platform>win</javafx.platform></properties>
+        </profile>
+    </profiles>
 
 </project>
