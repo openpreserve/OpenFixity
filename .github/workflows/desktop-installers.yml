@@ -19,8 +19,13 @@ name: Desktop installers
 # window cannot be packaged there. ARM Linux users run the server or Docker instead.
 #
 # Trigger:
-#   - a v* tag           -> build, upload to the artifact server, attach to the Release
-#   - manual dispatch    -> build and upload the installers as workflow artifacts only
+#   - a v* tag        -> build every installer, upload each to the artifact server, then a final
+#                        `release` job uploads the tag metadata and creates the GitHub Release
+#                        (with artifact-server download links in the notes)
+#   - manual dispatch -> build and upload the installers as workflow artifacts only
+#
+# The release job runs after the whole build matrix, so the Release is created once, atomically,
+# and lists every platform's download rather than each build racing to update it.
 
 on:
   push:
@@ -146,24 +151,107 @@ jobs:
             target/desktop/*.exe
           if-no-files-found: warn
 
-      - name: Attach to the GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+  # Runs once, after every installer is built. Uploads the tag metadata to the artifact server
+  # and creates the GitHub Release, with download links that point at the artifact server.
+  release:
+    name: Release
+    needs: package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need the annotated tag object to read its message
+
+      - name: Download all built installers
+        uses: actions/download-artifact@v4
+        with:
+          path: dist        # each matrix artifact lands under dist/openfixity-<target>/
+
+      - name: Assemble metadata and release notes
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG='${{ github.ref_name }}'
+          HASH='${{ github.sha }}'
+          REPO='${{ github.repository }}'
+          REPO_SAFE="$(echo "$REPO" | tr '/' '-')"
+          VERSION_SAFE="$(echo "$TAG" | tr '/:' '--')"
+          DL_BASE="https://artifacts.opf-labs.org/download/${REPO_SAFE}/${VERSION_SAFE}"
+          BROWSE_URL="https://artifacts.opf-labs.org/browse/${REPO_SAFE}/${VERSION_SAFE}"
+
+          # Annotated-tag message; fall back to the commit subject for a lightweight tag.
+          MESSAGE="$(git tag -l --format='%(contents)' "$TAG")"
+          [ -n "$MESSAGE" ] || MESSAGE="$(git log -1 --pretty=%B "$HASH")"
+
+          # Tag metadata for the artifact server. jq produces valid JSON regardless of newlines
+          # or quotes in the tag message.
+          jq -n \
+            --arg repo_url "https://github.com/${REPO}" \
+            --arg tag "$TAG" \
+            --arg tag_message "$MESSAGE" \
+            --arg commit_hash "$HASH" \
+            --arg commit_url "https://github.com/${REPO}/commit/${HASH}" \
+            --arg build_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg description "OpenFixity desktop installers built by GitHub Actions." \
+            --arg workflow_url "https://github.com/${REPO}/actions/runs/${{ github.run_id }}" \
+            '{repo_url:$repo_url, tag:$tag, tag_message:$tag_message, commit_hash:$commit_hash, commit_url:$commit_url, build_date:$build_date, description:$description, workflow_url:$workflow_url}' \
+            > tag-metadata.json
+
+          # Release notes, with artifact-server download links built from the actual files.
+          {
+            echo "OpenFixity desktop installers for **${TAG}**."
+            echo
+            echo "These installers are **not code-signed**. On first launch:"
+            echo "- **macOS**: right-click the app and choose *Open*, then confirm, to get past Gatekeeper."
+            echo "- **Windows**: on the SmartScreen prompt, choose *More info* then *Run anyway*."
+            echo
+            echo "See INSTALL.md for details."
+            echo
+            echo "### Alternative downloads (OPF artifact server)"
+            echo
+            echo "The same installers are mirrored on the OPF artifact server, browsable at <${BROWSE_URL}>:"
+            echo
+            find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' -o -name '*.msi' -o -name '*.exe' \) -printf '%f\n' \
+              | sort | while read -r name; do
+                echo "- [${name}](${DL_BASE}/${name})"
+              done
+          } > RELEASE_BODY.md
+
+          {
+            echo "REPO_SAFE=${REPO_SAFE}"
+            echo "VERSION_SAFE=${VERSION_SAFE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload tag metadata to the artifact server
+        # Best-effort: never fail the release if the metadata endpoint or token is unavailable.
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.ARTIFACT_UPLOAD_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "ARTIFACT_UPLOAD_TOKEN not set; skipping metadata upload."
+            exit 0
+          fi
+          curl -X POST "https://artifacts.opf-labs.org/upload/${{ steps.meta.outputs.REPO_SAFE }}/${{ steps.meta.outputs.VERSION_SAFE }}/metadata" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d @tag-metadata.json \
+            --fail-with-body \
+            || echo "Metadata upload failed (endpoint may be unavailable); continuing."
+
+      - name: Create the GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           # Pre-release for -ALPHA / -BETA / -RC tags, so it does not show as "Latest".
           prerelease: ${{ contains(github.ref_name, '-') }}
+          body_path: RELEASE_BODY.md
           files: |
-            target/desktop/*.deb
-            target/desktop/*.rpm
-            target/desktop/*.dmg
-            target/desktop/*.msi
-            target/desktop/*.exe
+            dist/**/*.deb
+            dist/**/*.rpm
+            dist/**/*.dmg
+            dist/**/*.msi
+            dist/**/*.exe
           fail_on_unmatched_files: false
-          body: |
-            OpenFixity desktop installers.
-
-            These installers are **not code-signed**. On first launch:
-            - **macOS**: right-click the app and choose *Open*, then confirm, to get past Gatekeeper.
-            - **Windows**: on the SmartScreen prompt, choose *More info* then *Run anyway*.
-
-            See INSTALL.md for details.
